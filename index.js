@@ -17,11 +17,30 @@ const boltApp = new App({
   token: botToken
 });
 
+// Variable to track if the bot is paused
+let isPaused = false;
+
 // Listen for any message
-boltApp.message(async ({ message, say }) => {
-  const userQuery = message.text; // Extract the entire message text
-  const gptResponse = await fetchOpenAIResponse(userQuery); // Pass it to fetchOpenAIResponse
-  await say(`<@${message.user}>, ${gptResponse}`);
+boltApp.message(async ({ message, say, next }) => {
+  if (isPaused) return; // Do nothing if paused
+  if (['@pause', '@resume'].includes(message.text)) return next();
+  const userQuery = message.text;
+  const gptResponse = await fetchOpenAIResponse(userQuery);
+  await say(`Hello, <@${message.user}>, ${gptResponse}`);
+});
+
+// Listen for "@pause"
+boltApp.message(/@pause/, async ({ say }) => {
+  isPaused = true;
+  await say("The bot is now paused.");
+  return; // Stop propagation
+});
+
+// Listen for "@resume"
+boltApp.message(/@resume/, async ({ say }) => {
+  isPaused = false;
+  await say("The bot is now resumed.");
+  return; // Stop propagation
 });
 
 // Start the Bolt App
