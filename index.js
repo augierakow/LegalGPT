@@ -1,3 +1,5 @@
+//dev++
+
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -45,13 +47,20 @@ boltApp.message(/@resume/, async ({ say }) => {
 
 // Start the Bolt App
 (async () => {
-  await boltApp.start(process.env.PORT || 3002);
-  console.log(`⚡️ Bolt app is running!`);
+  const boltPort = process.env.PORT1;
+  if (!boltPort) {
+    throw new Error("PORT1 environment variable is not set.");
+  }
+  await boltApp.start(boltPort);
+  console.log(`⚡️ Bolt app is running on port ${boltPort}!`);
 })();
 
 // Initialize Express App
 const expressApp = express();
-const port = 3003;
+const port = process.env.PORT2;
+if (!port) {
+  throw new Error("PORT2 environment variable is not set.");
+}
 
 // Function to fetch OpenAI Response
 async function fetchOpenAIResponse(userQuery) {
