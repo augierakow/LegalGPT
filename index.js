@@ -1,6 +1,3 @@
-//main++++
-
-
 import dotenv from 'dotenv';
 dotenv.config();
 console.log("Printing Environment Variables:");
@@ -29,9 +26,9 @@ const boltApp = new App({
 // Variable to track if the bot is paused
 let isPaused = false;
 
-// Listen for any message
+// Listen for any messages
 boltApp.message(async ({ message, say, next }) => {
-  console.log(`Received message: ${message.text}`);
+  console.log(`Received message: ${message.text}`)
   if (isPaused) return; // Do nothing if paused
   if (['@pause', '@resume'].includes(message.text)) return next();
   const userQuery = message.text;
@@ -69,6 +66,16 @@ const port = process.env.PORT2;
 if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
+
+// Use this to debug Slack's 'url verification' of Replit endpoint.  Keep this near top of middleware definitions, after body-parsing middleware like Express, but before routes expecting Slack requests, to capture raw incoming requests from Slack before route handler processess them.
+// Parse JSON request bodies
+expressApp.use(express.json());
+//Log incoming request headers and body.
+expressApp.use((req, res, next) => {
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
+  next();
+});
 
 // Function to fetch OpenAI Response
 async function fetchOpenAIResponse(userQuery) {
