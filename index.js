@@ -1,5 +1,3 @@
-//dev+++
-
 import dotenv from 'dotenv';
 dotenv.config();
 console.log("Printing Environment Variables:");
@@ -29,7 +27,7 @@ const boltApp = new App({
 let isPaused = false;
 
 // Listen for any messages
-boltApp.message(async ({ message, say, next }) => { 
+boltApp.message(async ({ message, say, next }) => {
   console.log(`Received message: ${message.text}`)
   if (isPaused) return; // Do nothing if paused
   if (['@pause', '@resume'].includes(message.text)) return next();
@@ -75,7 +73,7 @@ expressApp.use(express.json());
 //Log incoming request headers and body.
 expressApp.use((req, res, next) => {
   console.log('Request Headers:', req.headers);
-  console.log('Request Body:', req.body); 
+  console.log('Request Body:', req.body);
   next();
 });
 
