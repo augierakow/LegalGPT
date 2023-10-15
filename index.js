@@ -28,7 +28,7 @@ const boltApp = new App({
 // Variable to track if the bot is paused
 let isPaused = false;
 
-// Listen for any message
+// Listen for any messages
 boltApp.message(async ({ message, say, next }) => { 
   console.log(`Received message: ${message.text}`)
   if (isPaused) return; // Do nothing if paused
@@ -79,7 +79,6 @@ expressApp.use((req, res, next) => {
   next();
 });
 
-
 // Function to fetch OpenAI Response
 async function fetchOpenAIResponse(userQuery) {
   try {
@@ -115,3 +114,29 @@ expressApp.get("/", async (req, res) => {
 expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
+
+// Node.js code snippet to manually make bot send a message using Slack API
+// Import the WebClient class from the @slack/web-api package
+import { WebClient } from '@slack/web-api';
+
+// Initialize a new instance of the WebClient class with your bot token
+const web = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+// Define a function to send a test message
+const sendTestMessage = async (channelId) => {
+  try {
+    // Call the chat.postMessage method using the WebClient
+    const result = await web.chat.postMessage({
+      text: 'This is a test message',
+      channel: channelId,
+    });
+
+    console.log(`Message sent: ${result.ts}`);
+  } catch (error) {
+    console.error(`Error sending message: ${error}`);
+  }
+};
+
+// Call the function to send the test message to a specific channel ID
+// Replace 'YOUR_CHANNEL_ID' with the actual channel ID
+sendTestMessage('C0607625DQW');
