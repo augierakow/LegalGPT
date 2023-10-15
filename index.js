@@ -2,6 +2,12 @@
 
 import dotenv from 'dotenv';
 dotenv.config();
+console.log("Printing Environment Variables:");
+console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
+console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
+console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
+console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
+console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
 import express from "express";
 import { Configuration, OpenAIApi } from "openai";
@@ -24,6 +30,7 @@ let isPaused = false;
 
 // Listen for any message
 boltApp.message(async ({ message, say, next }) => {
+  console.log(`Received message: ${message.text}`);
   if (isPaused) return; // Do nothing if paused
   if (['@pause', '@resume'].includes(message.text)) return next();
   const userQuery = message.text;
@@ -65,6 +72,7 @@ if (!port) {
 // Function to fetch OpenAI Response
 async function fetchOpenAIResponse(userQuery) {
   try {
+    console.log(`Sending query to OpenAI: ${userQuery}`);
     const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
     const promptMessage = [
       { role: "user", content: userQuery }
@@ -73,6 +81,7 @@ async function fetchOpenAIResponse(userQuery) {
       model: "gpt-4",
       messages: promptMessage
     });
+    console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
     return response.data.choices[0].message.content;
   } catch (error) {
     console.error("OpenAI API Error:", error);
@@ -95,3 +104,29 @@ expressApp.get("/", async (req, res) => {
 expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
+
+// Node.js code snippet to manually make bot send a message using Slack API
+// Import the WebClient class from the @slack/web-api package
+import { WebClient } from '@slack/web-api';
+
+// Initialize a new instance of the WebClient class with your bot token
+const web = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+// Define a function to send a test message
+const sendTestMessage = async (channelId) => {
+  try {
+    // Call the chat.postMessage method using the WebClient
+    const result = await web.chat.postMessage({
+      text: 'This is a test message',
+      channel: channelId,
+    });
+
+    console.log(`Message sent: ${result.ts}`);
+  } catch (error) {
+    console.error(`Error sending message: ${error}`);
+  }
+};
+
+// Call the function to send the test message to a specific channel ID
+// Replace 'YOUR_CHANNEL_ID' with the actual channel ID
+sendTestMessage('C0607625DQW');
