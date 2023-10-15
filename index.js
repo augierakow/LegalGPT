@@ -1,7 +1,13 @@
-//dev++++
+//dev+++
 
 import dotenv from 'dotenv';
 dotenv.config();
+console.log("Printing Environment Variables:");
+console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
+console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
+console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
+console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
+console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
 import express from "express";
 import { Configuration, OpenAIApi } from "openai";
@@ -23,7 +29,8 @@ const boltApp = new App({
 let isPaused = false;
 
 // Listen for any message
-boltApp.message(async ({ message, say, next }) => {
+boltApp.message(async ({ message, say, next }) => { 
+  console.log(`Received message: ${message.text}`)
   if (isPaused) return; // Do nothing if paused
   if (['@pause', '@resume'].includes(message.text)) return next();
   const userQuery = message.text;
@@ -62,9 +69,21 @@ if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
 
+// Use this to debug Slack's 'url verification' of Replit endpoint.  Keep this near top of middleware definitions, after body-parsing middleware like Express, but before routes expecting Slack requests, to capture raw incoming requests from Slack before route handler processess them.
+// Parse JSON request bodies
+expressApp.use(express.json());
+//Log incoming request headers and body.
+expressApp.use((req, res, next) => {
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body); 
+  next();
+});
+
+
 // Function to fetch OpenAI Response
 async function fetchOpenAIResponse(userQuery) {
   try {
+    console.log(`Sending query to OpenAI: ${userQuery}`);
     const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
     const promptMessage = [
       { role: "user", content: userQuery }
@@ -73,6 +92,7 @@ async function fetchOpenAIResponse(userQuery) {
       model: "gpt-4",
       messages: promptMessage
     });
+    console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
     return response.data.choices[0].message.content;
   } catch (error) {
     console.error("OpenAI API Error:", error);
