@@ -26,8 +26,27 @@ const boltApp = new App({
 // Variable to track if the bot is paused
 let isPaused = false;
 
-// Listen for any messages
-boltApp.message(async ({ message, say, next }) => {
+  // Listen for Slack messages
+  const myMemberID = "U0612QSEZME";
+
+  boltApp.message(async ({ message, say, next }) => {
+
+    // Check for certain conditions to block bot from sending message to OpenAI
+    if (!message.text) {
+      console.log('Message text is undefined, skipping.');
+      return;
+    }
+
+    // Skip messages from Augie
+    if (message.user === myMemberID) {
+      if (message.text.includes('...') || message.text.includes('///')) {
+        console.log('Special message from Augie, skipping.');
+      } else {
+        console.log('Message is from Augie, skipping.');
+      }
+      return;
+    }
+  
   console.log(`Received message: ${message.text}`)
   if (isPaused) return; // Do nothing if paused
   if (['@pause', '@resume'].includes(message.text)) return next();
