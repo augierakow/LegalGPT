@@ -51,13 +51,13 @@ boltApp.message(async ({ message, say, next }) => {
     return;
   }
 
-  // Skip messages from Augie, unless they include '///' 
+  // Skip messages from Augie if they don't include @LegalGPT (using backticks for template literals)
   if (message.user === myMemberID) {
-    if (!message.text.toLowerCase().includes('///')) {
-      console.log('Message is from Augie without ///, skipping.');
+    if (!message.text.includes(`@${botMemberID}>`)) {
+      console.log('Message is from Augie without @LegalGPT, skipping.');
       return;
     } else {
-      console.log('Message is from Augie with ///, processing.');
+      console.log('Message is from Augie with @LegalGPT, processing.');
     }
   }
 
