@@ -26,29 +26,47 @@ const boltApp = new App({
 // Variable to track if the bot is paused
 let isPaused = false;
 
-  // Listen for Slack messages
-  const myMemberID = "U0612QSEZME";
+// Listen for Slack messages
+const myMemberID = "U0612QSEZME"; 
+const botMemberID = "U0616C42TGA";
 
-  boltApp.message(async ({ message, say, next }) => {
+// Message handler checks for certain conditions to ingore or send ot OpenAI
+boltApp.message(async ({ message, say, next }) => {
 
-    // Check for certain conditions to block bot from sending message to OpenAI
-    if (!message.text) {
-      console.log('Message text is undefined, skipping.');
+  // Skip if message is undefined   
+  if (!message.text) {
+    console.log('Message text is undefined, skipping.');
+    return;
+  }
+
+  // Skip if message is from the bot itself
+  if (message.user === botMemberID) {
+    console.log('Message is from the bot, skipping.');
+    return;
+  }
+
+  // Skip messages from Augie, unless they include ///
+  if (message.user === myMemberID) {
+    if (!message.text.toLowerCase().includes('///')) {
+      console.log('Message is from Augie without ///, skipping.');
       return;
+    } else {
+      console.log('Message is from Augie with ///, processing.');
     }
+  }
 
-    // Skip messages from Augie
-    if (message.user === myMemberID) {
-      if (message.text.includes('...') || message.text.includes('///')) {
-        console.log('Special message from Augie, skipping.');
-      } else {
-        console.log('Message is from Augie, skipping.');
-      }
-      return;
-    }
-  
+  // Detect and handle system messages (e.g., user added to channel or user joined the channel)
+  if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
+    await say(`Welcome, <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
+    return;
+  }
+
+
+  // Log received message   
   console.log(`Received message: ${message.text}`)
-  if (isPaused) return; // Do nothing if paused
+
+  // Do nothing if paused
+  if (isPaused) return;
   if (['@pause', '@resume'].includes(message.text)) return next();
   const userQuery = message.text;
   const gptResponse = await fetchOpenAIResponse(userQuery);
