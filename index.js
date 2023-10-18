@@ -30,7 +30,7 @@ let isPaused = false;
 const myMemberID = "U0612QSEZME"; 
 const botMemberID = "U0616C42TGA";
 
-// Message handler checks for certain conditions to ingore or send ot OpenAI
+// Message handler checks for certain conditions to ignore or send to OpenAI
 boltApp.message(async ({ message, say, next }) => {
 
   // Skip if message is undefined   
