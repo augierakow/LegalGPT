@@ -28,7 +28,7 @@ let isPaused = false;
 
 // Listen for Slack messages
 const myMemberID = "U0612QSEZME"; 
-const botMemberID = "U0616C42TGA";
+const botMemberID = "U0616C42TGA"; 
 
 // Message handler checks for certain conditions to ignore or send to OpenAI
 boltApp.message(async ({ message, say, next }) => {
@@ -45,7 +45,13 @@ boltApp.message(async ({ message, say, next }) => {
     return;
   }
 
-  // Skip messages from Augie, unless they include ///
+  // Skip messages for Augie (using backticks for template literals)
+  if (message.text.includes(`<@${myMemberID}>`)) {
+    console.log('Message is for Augie, skipping.');
+    return;
+  }
+
+  // Skip messages from Augie, unless they include '///' 
   if (message.user === myMemberID) {
     if (!message.text.toLowerCase().includes('///')) {
       console.log('Message is from Augie without ///, skipping.');
@@ -55,12 +61,11 @@ boltApp.message(async ({ message, say, next }) => {
     }
   }
 
-  // Detect and handle system messages (e.g., user added to channel or user joined the channel)
+  // Responding to system messages - e.g., user joins, user added
   if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
-    await say(`Welcome, <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
+    await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
     return;
   }
-
 
   // Log received message   
   console.log(`Received message: ${message.text}`)
@@ -174,4 +179,4 @@ const sendTestMessage = async (channelId) => {
 
 // Call the function to send the test message to a specific channel ID
 // Replace 'YOUR_CHANNEL_ID' with the actual channel ID
-sendTestMessage('C0607625DQW');
+sendTestMessage('C0616CNPG5D');
