@@ -23,12 +23,15 @@ const boltApp = new App({
   token: botToken
 });
 
+// Initialize in-memory store as JavaScript object
+const userHistories = {};
+
 // Variable to track if the bot is paused
 let isPaused = false;
 
 // Listen for Slack messages
-const myMemberID = "U0612QSEZME"; 
-const botMemberID = "U0616C42TGA"; 
+const myMemberID = process.env.MY_MEMBER_ID; 
+const botMemberID = process.env.BOT_MEMBER_ID; 
 
 // Message handler checks for certain conditions to ignore or send to OpenAI
 boltApp.message(async ({ message, say, next }) => {
@@ -51,7 +54,7 @@ boltApp.message(async ({ message, say, next }) => {
     return;
   }
 
-  // Skip messages from Augie if they don't include @LegalGPT (using backticks for template literals)
+  // Skip messages from Augie if they don't include @LegalGPT (using backticks)
   if (message.user === myMemberID) {
     if (!message.text.includes(`@${botMemberID}>`)) {
       console.log('Message is from Augie without @LegalGPT, skipping.');
@@ -60,12 +63,22 @@ boltApp.message(async ({ message, say, next }) => {
       console.log('Message is from Augie with @LegalGPT, processing.');
     }
   }
-
-  // Responding to system messages - e.g., user joins, user added
+  
+  // Skip messages saying users joined or were added
   if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
     await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
     return;
   }
+
+  // Check User ID for userHistories object. Array, 2 properties: role ("user") and content (actual text of message)    
+  if (!userHistories[message.user]) userHistories[message.user] = [];
+  //  Add message to userHistories object
+  userHistories[message.user].push({ role: "user", content: message.text });
+  //  Log content of userHistories  
+  console.log('Updated userHistories:', userHistories); // NOT SHOWING IN REPLIT CONSOLE. 
+
+  //  Log details of userHistories update message handling 
+  console.log(`User ${message.user} sent message: ${message.text}`);
 
   // Log received message   
   console.log(`Received message: ${message.text}`)
@@ -75,7 +88,7 @@ boltApp.message(async ({ message, say, next }) => {
   if (['@pause', '@resume'].includes(message.text)) return next();
   const userQuery = message.text;
   const gptResponse = await fetchOpenAIResponse(userQuery);
-  await say(`Hello, <@${message.user}>, ${gptResponse}`);
+  await say(`Hello <@${message.user}>, ${gptResponse}`);
 });
 
 // Listen for "@pause"
@@ -155,6 +168,16 @@ expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
 
+// Create ~/debug endpoint in project directory to log userHistories object (since Replit console isn't showing logs after start and test). View at https://slack2gpt-main2.augierakow.repl.co/debug_ (refresh browser).
+expressApp.get("/debug", (req, res) => {
+  // Log userHistories object content to console
+  console.log(userHistories);
+  // Send userHistories object itself to browser
+  res.json(userHistories);
+  // Send message to browser (doens't mean message is true). COMMENTED OUT TO USE res.json() INSTEAD
+  // res.send("Printed userHistories to console");  
+});  
+
 // Node.js code snippet to manually make bot send a message using Slack API
 // Import the WebClient class from the @slack/web-api package
 import { WebClient } from '@slack/web-api';
@@ -177,6 +200,5 @@ const sendTestMessage = async (channelId) => {
   }
 };
 
-// Call the function to send the test message to a specific channel ID
-// Replace 'YOUR_CHANNEL_ID' with the actual channel ID
-sendTestMessage('C0616CNPG5D');
+// Send test message to #legalgpt-test channel
+sendTestMessage(process.env.TEST_CHANNEL_ID);
