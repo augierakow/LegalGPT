@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
+
+// Log environmental variables 
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
@@ -30,8 +32,8 @@ const userHistories = {};
 let isPaused = false;
 
 // Listen for Slack messages
-const myMemberID = process.env.MY_MEMBER_ID; 
-const botMemberID = process.env.BOT_MEMBER_ID; 
+const myMemberID = process.env.MY_MEMBER_ID;
+const botMemberID = process.env.BOT_MEMBER_ID;
 
 // Message handler checks for certain conditions to ignore or send to OpenAI
 boltApp.message(async ({ message, say, next }) => {
@@ -63,24 +65,24 @@ boltApp.message(async ({ message, say, next }) => {
       console.log('Message is from Augie with @LegalGPT, processing.');
     }
   }
-  
+
   // Skip messages saying users joined or were added
   if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
     await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
     return;
   }
 
-  // Check User ID for userHistories object. Array, 2 properties: role ("user") and content (actual text of message)    
+  // Check User ID for userHistories object.    
   if (!userHistories[message.user]) userHistories[message.user] = [];
-  //  Add message to userHistories object
+  //  Add message to userHistories object. Two-property array: role ("user"), content (message text) 
   userHistories[message.user].push({ role: "user", content: message.text });
   //  Log content of userHistories  
-  console.log('Updated userHistories:', userHistories); // NOT SHOWING IN REPLIT CONSOLE. 
+  console.log('Updated userHistories:', userHistories);  // FAILS TO LOG UPDATED USER HISTORIES
 
   //  Log details of userHistories update message handling 
-  console.log(`User ${message.user} sent message: ${message.text}`);
+  console.log(`User ${message.user} sent message: ${message.text}`);  // NEED TO TEST THIS
 
-  // Log received message   
+  // Log received message. 
   console.log(`Received message: ${message.text}`)
 
   // Do nothing if paused
@@ -95,17 +97,19 @@ boltApp.message(async ({ message, say, next }) => {
 boltApp.message(/@pause/, async ({ say }) => {
   isPaused = true;
   await say("The bot is now paused.");
-  return; // Stop propagation
+  return;
 });
 
 // Listen for "@resume"
 boltApp.message(/@resume/, async ({ say }) => {
   isPaused = false;
   await say("The bot is now resumed.");
-  return; // Stop propagation
+  return;
 });
 
-// Start the Bolt App
+// MOVE BOLT AND EXPRESS INITIALIZATION TO TOP?
+
+// Start the Bolt App  
 (async () => {
   const boltPort = process.env.PORT1;
   if (!boltPort) {
@@ -122,7 +126,7 @@ if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
 
-// Use this to debug Slack's 'url verification' of Replit endpoint.  Keep this near top of middleware definitions, after body-parsing middleware like Express, but before routes expecting Slack requests, to capture raw incoming requests from Slack before route handler processess them.
+// Logs to debug Slack's 'url verification' of Replit endpoint.  MOVE TOWARD TOP?
 // Parse JSON request bodies
 expressApp.use(express.json());
 //Log incoming request headers and body.
@@ -176,7 +180,7 @@ expressApp.get("/debug", (req, res) => {
   res.json(userHistories);
   // Send message to browser (doens't mean message is true). COMMENTED OUT TO USE res.json() INSTEAD
   // res.send("Printed userHistories to console");  
-});  
+});
 
 // Node.js code snippet to manually make bot send a message using Slack API
 // Import the WebClient class from the @slack/web-api package
