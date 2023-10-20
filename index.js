@@ -56,7 +56,7 @@ boltApp.message(async ({ message, say, next }) => {
 
   // Skip messages from Augie if they don't include @LegalGPT (using backticks)
   if (message.user === myMemberID) {
-    if (!message.text.includes(`@${botMemberID}>`)) {
+    if (!message.text.includes(`<@${botMemberID}>`)) {
       console.log('Message is from Augie without @LegalGPT, skipping.');
       return;
     } else {
