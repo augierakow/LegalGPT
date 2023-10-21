@@ -71,9 +71,8 @@ expressApp.get("/", async (req, res) => {
 // Initialize in-memory store as JavaScript object
 const userHistories = {};
 
-// Node.js code snippet to manually make bot send a message using Slack API
-// Import the WebClient class from the @slack/web-api package
-import { WebClient } from '@slack/web-api';
+// Import the WebClient and ErrorCode classes from the @slack/web-api package
+import { WebClient, ErrorCode } from '@slack/web-api';
 
 // Initialize a new instance of the WebClient class with your bot token
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
@@ -86,10 +85,15 @@ const sendTestMessage = async (channelId) => {
       text: 'This is a test message',
       channel: channelId,
     });
-
     console.log(`Message sent: ${result.ts}`);
   } catch (error) {
-    console.error(`Error sending message: ${error}`);
+    if (error.code === ErrorCode.PlatformError) {
+      console.error(`Slack API returned an error: ${error.message}`);
+    } else if (error.code === ErrorCode.RateLimitedError) {
+      console.error(`Rate-limited by Slack API. Retry after: ${error.original.retries}`);
+    } else {
+      console.error(`Error sending message: ${error}`);
+    }
   }
 };
 
@@ -119,64 +123,69 @@ boltApp.message(/@resume/, async ({ say }) => {
 
 // Message handler checks for certain conditions to ignore or send to OpenAI
 boltApp.message(async ({ message, say, next }) => {
-
-  // Skip if message is undefined   
-  if (!message.text) {
-    console.log('Message text is undefined, skipping.');
-    return;
-  }
-
-  // Skip if message is from the bot itself
-  if (message.user === botMemberID) {
-    console.log('Message is from the bot, skipping.');
-    return;
-  }
-
-  // Skip messages for Augie (using backticks for template literals)
-  if (message.text.includes(`<@${myMemberID}>`)) {
-    console.log('Message is for Augie, skipping.');
-    return;
-  }
-
-  // Skip messages from Augie if they don't include @LegalGPT (using backticks)
-  if (message.user === myMemberID) {
-    if (!message.text.includes(`<@${botMemberID}>`)) {
-      console.log('Message is from Augie without @LegalGPT, skipping.');
+  try {
+    // Skip if message is undefined   
+    if (!message.text) {
+      console.log('Message text is undefined, skipping.');
       return;
-    } else {
-      console.log('Message is from Augie with @LegalGPT, processing.');
     }
-  }
-
-  // Skip messages saying users joined or were added
-  if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
-    await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
-    return;
-  }
-
-  // Check User ID for userHistories object.    
-  if (!userHistories[message.user]) userHistories[message.user] = [];
-  //  Add message to userHistories object. Two-property array: role ("user"), content (message text) 
-  userHistories[message.user].push({ role: "user", content: message.text });
-  //  Log content of userHistories  
-  console.log('Updated userHistories:', userHistories);  // FAILS TO LOG UPDATED USER HISTORIES
-
-  //  Log details of userHistories update message handling 
-  console.log(`User ${message.user} sent message: ${message.text}`);  // NEED TO TEST THIS
-
-  // Log received message. 
-  console.log(`Received message: ${message.text}`)
-
-  // Do nothing if paused
-  if (isPaused) return;
-  if (['@pause', '@resume'].includes(message.text)) return next();
-  const userQuery = message.text;
-  const gptResponse = await fetchOpenAIResponse(userQuery);
-  await say(`Hello <@${message.user}>, ${gptResponse}`);
+  
+    // Skip if message is from the bot itself
+    if (message.user === botMemberID) {
+      console.log('Message is from the bot, skipping.');
+      return;
+    }
+  
+    // Skip messages for Augie (using backticks for template literals)
+    if (message.text.includes(`<@${myMemberID}>`)) {
+      console.log('Message is for Augie, skipping.');
+      return;
+    }
+  
+    // Skip messages from Augie if they don't include @LegalGPT (using backticks)
+    if (message.user === myMemberID) {
+      if (!message.text.includes(`<@${botMemberID}>`)) {
+        console.log('Message is from Augie without @LegalGPT, skipping.');
+        return;
+      } else {
+        console.log('Message is from Augie with @LegalGPT, processing.');
+      }
+    }
+  
+    // Skip messages saying users joined or were added
+    if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
+      await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
+      return;
+    }
+  
+    // Check User ID for userHistories object.    
+    if (!userHistories[message.user]) userHistories[message.user] = [];
+    //  Add message to userHistories object. Two-property array: role ("user"), content (message text) 
+    userHistories[message.user].push({ role: "user", content: message.text });
+    //  Log content of userHistories  
+    console.log('Updated userHistories:', userHistories);  // FAILS TO LOG UPDATED USER HISTORIES
+  
+    //  Log details of userHistories update message handling 
+    console.log(`User ${message.user} sent message: ${message.text}`);  // NEED TO TEST THIS
+  
+    // Log received message. 
+    console.log(`Received message: ${message.text}`)
+  
+    // Do nothing if paused
+    if (isPaused) return;
+    if (['@pause', '@resume'].includes(message.text)) return next();
+    const userQuery = message.text;
+    const gptResponse = await fetchOpenAIResponse(userQuery);
+    await say(`Hello <@${message.user}>, ${gptResponse}`);
+  } catch (error) {  // This is where the catch block starts
+    console.error(`Error in message handling: ${error}`);
+    await say("Sorry, an error occurred while processing your request.");
+  }  // This is where the catch block ends
 });
 
 // Fetch OpenAI Response
-async function fetchOpenAIResponse(userQuery) {
+async function fetchOpenAIResponse(userQuery, retryCount = 0) {
+  const maxRetries = 5;  // Adjustable
   try {
     console.log(`Sending query to OpenAI: ${userQuery}`);
     const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
@@ -190,8 +199,18 @@ async function fetchOpenAIResponse(userQuery) {
     console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
     return response.data.choices[0].message.content;
   } catch (error) {
-    console.error("OpenAI API Error:", error);
-    return "An error occurred while fetching data from OpenAI";
+    if (error.response && error.response.status === 429) {
+      if (retryCount >= maxRetries) {
+        console.log(`Max retries reached. Not retrying.`);
+        return "An error occurred: Maximum retry limit reached";
+      }
+      console.log('OpenAI API rate limit exceeded. Retrying after 5 seconds.');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      return fetchOpenAIResponse(userQuery, retryCount + 1);
+    } else {
+      console.error("OpenAI API Error:", error);
+      return "An error occurred while fetching data from OpenAI";
+    }
   }
 }
 
