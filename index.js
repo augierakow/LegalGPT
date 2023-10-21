@@ -1,6 +1,16 @@
+// ---------- Environtment Variables & Configurations
+
 // Environment variables
 import dotenv from 'dotenv';
 dotenv.config();
+
+//  Dependencies
+import express from "express";
+import { Configuration, OpenAIApi } from "openai";
+import pkg from '@slack/bolt';
+
+// ---------- Slack Configurations
+
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
@@ -8,10 +18,6 @@ console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
-//  Dependencies
-import express from "express";
-import { Configuration, OpenAIApi } from "openai";
-import pkg from '@slack/bolt';
 
 // Definitions 
 const { App } = pkg;
@@ -41,6 +47,26 @@ const expressApp = express();
 const port = process.env.PORT2;
 if (!port) {
   throw new Error("PORT2 environment variable is not set.");
+}
+
+// Fetch OpenAI Response
+async function fetchOpenAIResponse(userQuery) {
+  try {
+    console.log(`Sending query to OpenAI: ${userQuery}`);
+    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+    const promptMessage = [
+      { role: "user", content: userQuery }
+    ];
+    const response = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: promptMessage
+    });
+    console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.error("OpenAI API Error:", error);
+    return "An error occurred while fetching data from OpenAI";
+  }
 }
 
 // Parse JSON request bodies (to debut Slack's url_verification of Replit endpoint)
@@ -175,33 +201,11 @@ boltApp.message(async ({ message, say, next }) => {
   await say(`Hello <@${message.user}>, ${gptResponse}`);
 });
 
-// Fetch OpenAI Response
-async function fetchOpenAIResponse(userQuery) {
-  try {
-    console.log(`Sending query to OpenAI: ${userQuery}`);
-    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
-    const promptMessage = [
-      { role: "user", content: userQuery }
-    ];
-    const response = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: promptMessage
-    });
-    console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
-    return response.data.choices[0].message.content;
-  } catch (error) {
-    console.error("OpenAI API Error:", error);
-    return "An error occurred while fetching data from OpenAI";
-  }
-}
 
-// Create ~/debug endpoint in project directory to log userHistories object (since Replit console isn't showing logs after start and test). View at https://slack2gpt-main2.augierakow.repl.co/debug_ (refresh browser).
-expressApp.get("/debug", (req, res) => {
-  // Log userHistories object content to console
-  console.log(userHistories);
-  // Send userHistories object itself to browser
-  res.json(userHistories);
-  // Send message to browser (doens't mean message is true). COMMENTED OUT TO USE res.json() INSTEAD
-  // res.send("Printed userHistories to console");  
+// Create Express debug endpoint
+expressApp.get("/debug", (req, res) => {  // https://slack2gpt-main2.augierakow.repl.co/debug 
+ console.log(userHistories);   // Log userHistories object content to console
+  res.json(userHistories);   // Send userHistories object itself to browser 
 });
+
 // End of program
