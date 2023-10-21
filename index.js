@@ -1,16 +1,14 @@
-// ---------- Environtment Variables & Configurations ----------
+// =============== Configurations & Initializations ===============
 
-//  Dependencies
+//  Import dependencies
 import express from "express";
 import { Configuration, OpenAIApi } from "openai";
 import pkg from '@slack/bolt';
 import dotenv from 'dotenv';
 import { WebClient } from '@slack/web-api';
 
-// Load environment variables from .env file
+// Import and verify environment variables from .env file
 dotenv.config();
-
-// Check if environment variables are set
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
@@ -18,13 +16,65 @@ console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
-// ---------- OpenAI API Functions ----------
+// Initialize OpenAI API
+const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
 
-// Fetch OpenAI Response
+// Initialize Slack bot 
+const { App } = pkg;
+const signingSecret = process.env.SLACK_SIGNING_SECRET;
+const botToken = process.env.SLACK_BOT_TOKEN;
+const boltApp = new App({
+  signingSecret: signingSecret,
+  token: botToken
+});
+const web = new WebClient(process.env.SLACK_BOT_TOKEN);
+const userHistories = {}; // Initialize in-memory store as JavaScript object
+let isPaused = false; // Variable to track if the bot is paused
+const myMemberID = process.env.MY_MEMBER_ID; // For listeners 
+const botMemberID = process.env.BOT_MEMBER_ID; // For listeners
+ 
+// Initialize Express app
+const expressApp = express();
+const port = process.env.PORT2;
+if (!port) {
+  throw new Error("PORT2 environment variable is not set.");
+}
+expressApp.use(express.json()); // Parse JSON requests 
+
+// =============== Express App Routes & Middleware ===============
+
+// Set Express route to log request headers and body - eg, to debug Slack's url_verification
+expressApp.use((req, res, next) => { 
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
+  next();
+});
+
+// Set Express route for test query to OpenAI
+expressApp.get("/", async (req, res) => {
+  try {
+    const response = await fetchOpenAIResponse("Test Query");
+    res.send(response);
+  } catch (error) {
+    console.error("Error details:", error);
+    res.status(500).send("An error occurred");
+  }
+});
+
+//  Set Express endpoint to debug userHistories
+expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.repl.co/debug 
+ console.log(userHistories);   // Log userHistories object content to console
+  res.json(userHistories);   // Send userHistories object itself to browser 
+});
+
+// =============== Application Logic ===============
+
+// -------- OpenAI API Functions --------
+
+// Define OpenAI functions 
 async function fetchOpenAIResponse(userQuery) {
   try {
     console.log(`Sending query to OpenAI: ${userQuery}`);
-    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
     const promptMessage = [
       { role: "user", content: userQuery }
     ];
@@ -40,31 +90,9 @@ async function fetchOpenAIResponse(userQuery) {
   }
 }
 
-// ---------- Slack Bot Confgigurations & Initialization ----------
+// -------- Slack Bot Functions --------
 
-// Initialize Bolt App
-const { App } = pkg;
-const signingSecret = process.env.SLACK_SIGNING_SECRET;
-const botToken = process.env.SLACK_BOT_TOKEN;
-const boltApp = new App({
-  signingSecret: signingSecret,
-  token: botToken
-});
-
-// Start Bolt App  
-(async () => {
-  const boltPort = process.env.PORT1;
-  if (!boltPort) {
-    throw new Error("PORT1 environment variable is not set.");
-  }
-  await boltApp.start(boltPort);
-  console.log(`⚡️ Bolt app is running on port ${boltPort}!`);
-})();
-
-// Initialize instance of WebClient class for sneding messages via Slack API
-const web = new WebClient(process.env.SLACK_BOT_TOKEN);
-
-// Define function to send test Slack message to given channel
+// Define Slack/Bolt functions
 const sendTestMessage = async (channelId) => {
   try {
     const result = await web.chat.postMessage({
@@ -78,57 +106,7 @@ const sendTestMessage = async (channelId) => {
   }
 };
 
-// Send test message to #legalgpt-test channel
-sendTestMessage(process.env.TEST_CHANNEL_ID);
-
-// ---------- Express App Configurations & Initializations ----------
-
-// Initialize Express App
-const expressApp = express();
-const port = process.env.PORT2;
-if (!port) {
-  throw new Error("PORT2 environment variable is not set.");
-}
-
-// Configure Express App Middleware to debut Slack's url_verifications
-expressApp.use(express.json()); // Parse JSON requests
-expressApp.use((req, res, next) => { //Log request headers and body
-  console.log('Request Headers:', req.headers);
-  console.log('Request Body:', req.body);
-  next();
-});
-
-// Express Test Route
-expressApp.get("/", async (req, res) => {
-  try {
-    const response = await fetchOpenAIResponse("Test Query");
-    res.send(response);
-  } catch (error) {
-    console.error("Error details:", error);
-    res.status(500).send("An error occurred");
-  }
-});
-
-// Start the Express App
-expressApp.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}`);
-});
-
-// Listen for Slack messages
-const myMemberID = process.env.MY_MEMBER_ID;
-const botMemberID = process.env.BOT_MEMBER_ID;
-
-// Variable to track if the bot is paused
-let isPaused = false;
-
-// Initialize in-memory store as JavaScript object
-const userHistories = {};
-
-// Create Express endpoint to debug userHistories
-expressApp.get("/debug", (req, res) => {  // https://slack2gpt-main2.augierakow.repl.co/debug 
- console.log(userHistories);   // Log userHistories object content to console
-  res.json(userHistories);   // Send userHistories object itself to browser 
-});
+// -------- Slack message listeners --------
 
 // Listen for "@pause"
 boltApp.message(/@pause/, async ({ say }) => {
@@ -200,6 +178,27 @@ boltApp.message(async ({ message, say, next }) => {
   const userQuery = message.text;
   const gptResponse = await fetchOpenAIResponse(userQuery);
   await say(`Hello <@${message.user}>, ${gptResponse}`);
+});
+
+// -------- Start Slack Bot --------
+
+// Start Bolt App  
+(async () => {
+  const boltPort = process.env.PORT1;
+  if (!boltPort) {
+    throw new Error("PORT1 environment variable is not set.");
+  }
+  await boltApp.start(boltPort);
+  console.log(`⚡️ Bolt app is running on port ${boltPort}!`);
+})();
+
+// Send test message to #legalgpt-test channel
+sendTestMessage(process.env.TEST_CHANNEL_ID);
+
+// -------- Start Express App -------- 
+
+expressApp.listen(port, () => {
+  console.log(`Listening at http://localhost:${port}`);
 });
 
 // End of program
