@@ -4,9 +4,10 @@
 import express from "express";
 import { Configuration, OpenAIApi } from "openai";
 import pkg from '@slack/bolt';
-
-// Load environment variabnles from .env file
 import dotenv from 'dotenv';
+import { WebClient } from '@slack/web-api';
+
+// Load environment variables from .env file
 dotenv.config();
 
 // Check if environment variables are set
@@ -61,7 +62,6 @@ const boltApp = new App({
 })();
 
 // Initialize instance of WebClient class for sneding messages via Slack API
-import { WebClient } from '@slack/web-api';
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 
 // Define function to send test Slack message to given channel
