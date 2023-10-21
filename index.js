@@ -120,7 +120,7 @@ boltApp.message(/@resume/, async ({ say }) => {
   return;
 });
 
-// Main Message Handler for Slack Messages
+// Main Message Handler for Slack messages
 boltApp.message(async ({ message, say, next }) => {
   try {
     // Skip if message is undefined   
@@ -197,7 +197,6 @@ boltApp.message(async ({ message, say, next }) => {
 sendTestMessage(process.env.TEST_CHANNEL_ID);
 
 // Start Express app
-
 expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
