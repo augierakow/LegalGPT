@@ -17,6 +17,28 @@ console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
+// ---------- OpenAI API Functions ----------
+
+// Fetch OpenAI Response
+async function fetchOpenAIResponse(userQuery) {
+  try {
+    console.log(`Sending query to OpenAI: ${userQuery}`);
+    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+    const promptMessage = [
+      { role: "user", content: userQuery }
+    ];
+    const response = await openai.createChatCompletion({
+      model: "gpt-4",
+      messages: promptMessage
+    });
+    console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.error("OpenAI API Error:", error);
+    return "An error occurred while fetching data from OpenAI";
+  }
+}
+
 // ---------- Slack Bot Confgigurations & Initialization ----------
 
 // Initialize Bolt App
@@ -92,9 +114,6 @@ expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
 });
 
-// Initialize in-memory store as JavaScript object
-const userHistories = {};
-
 // Listen for Slack messages
 const myMemberID = process.env.MY_MEMBER_ID;
 const botMemberID = process.env.BOT_MEMBER_ID;
@@ -102,33 +121,14 @@ const botMemberID = process.env.BOT_MEMBER_ID;
 // Variable to track if the bot is paused
 let isPaused = false;
 
+// Initialize in-memory store as JavaScript object
+const userHistories = {};
+
 // Create Express endpoint to debug userHistories
 expressApp.get("/debug", (req, res) => {  // https://slack2gpt-main2.augierakow.repl.co/debug 
  console.log(userHistories);   // Log userHistories object content to console
   res.json(userHistories);   // Send userHistories object itself to browser 
 });
-
-// ---------- OpenAI API Functions ----------
-
-// Fetch OpenAI Response
-async function fetchOpenAIResponse(userQuery) {
-  try {
-    console.log(`Sending query to OpenAI: ${userQuery}`);
-    const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
-    const promptMessage = [
-      { role: "user", content: userQuery }
-    ];
-    const response = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: promptMessage
-    });
-    console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
-    return response.data.choices[0].message.content;
-  } catch (error) {
-    console.error("OpenAI API Error:", error);
-    return "An error occurred while fetching data from OpenAI";
-  }
-}
 
 // Listen for "@pause"
 boltApp.message(/@pause/, async ({ say }) => {
