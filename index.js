@@ -1,13 +1,13 @@
-// =============== Configurations & Initializations ===============
+////// ==================== CONFIGS & INITS ====================
 
-//  Import Dependencies
+//  Import dependencies
 import express from "express";
 import { Configuration, OpenAIApi } from "openai";
 import pkg from '@slack/bolt';
 import dotenv from 'dotenv';
 import { WebClient } from '@slack/web-api';
 
-// Load and Environment Variables from .env file and Verify Status
+// Load environment variables from .env file and verify status
 dotenv.config();
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
@@ -16,10 +16,10 @@ console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
-// Initialize OpenAI API Connection 
+// Initialize OpenAI API connection 
 const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
 
-// Initialize Slack Bot Using Bolt Framework 
+// Initialize Slack bot using Bolt framework 
 const { App } = pkg;
 const signingSecret = process.env.SLACK_SIGNING_SECRET;
 const botToken = process.env.SLACK_BOT_TOKEN;
@@ -33,7 +33,7 @@ let isPaused = false; // Variable to track if the bot is paused
 const myMemberID = process.env.MY_MEMBER_ID; // For listeners 
 const botMemberID = process.env.BOT_MEMBER_ID; // For listeners
  
-// Initialize Express App & Middleware
+// Initialize Express app & middleware
 const expressApp = express();
 const port = process.env.PORT2;
 if (!port) {
@@ -41,16 +41,16 @@ if (!port) {
 }
 expressApp.use(express.json()); // Parse JSON requests 
 
-// =============== Express Routes & Middleware ===============
+////// ==================== EXPRESS ROUTES & MIDDELWARE ====================
 
-// Log Request Headers & Body for Debugging - eg, to debug Slack's url_verification
+// Log request headers & body for debugging - eg, to debug Slack's url_verification
 expressApp.use((req, res, next) => { 
   console.log('Request Headers:', req.headers);
   console.log('Request Body:', req.body);
   next();
 });
 
-// Test OpenAI API Query via GET Route 
+// Test OpenAI API query via GET route 
 expressApp.get("/", async (req, res) => {
   try {
     const response = await fetchOpenAIResponse("Test Query");
@@ -61,15 +61,15 @@ expressApp.get("/", async (req, res) => {
   }
 });
 
-//  Set Endpoint for Viewing userHistories
+//  Set endpoint for viewing userHistories
 expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.repl.co/debug 
  console.log(userHistories);   // Log userHistories object content to console
   res.json(userHistories);   // Send userHistories object itself to browser 
 });
 
-// =============== App Logic ===============
+////// ==================== APPLICATION LOGIC ====================
 
-// Define Helper Function to Fetch Responses from OpenAI
+// Define helper function to fetch responses from OpenAI
 async function fetchOpenAIResponse(userQuery) {
   try {
     console.log(`Sending query to OpenAI: ${userQuery}`);
@@ -88,9 +88,9 @@ async function fetchOpenAIResponse(userQuery) {
   }
 }
 
-// -------- Slack Bot Functions --------
+//// -------- Slack Bot Functions --------
 
-// Function to Send Test Message to a Given Channel
+// Function to send test message to a given channel
 const sendTestMessage = async (channelId) => {
   try {
     const result = await web.chat.postMessage({
@@ -104,7 +104,7 @@ const sendTestMessage = async (channelId) => {
   }
 };
 
-// -------- Slack Message Listeners --------
+//// -------- Slack Message Listeners --------
 
 // Listen for "@pause"
 boltApp.message(/@pause/, async ({ say }) => {
@@ -178,9 +178,9 @@ boltApp.message(async ({ message, say, next }) => {
   await say(`Hello <@${message.user}>, ${gptResponse}`);
 });
 
-// =============== App Startup =============== 
+////// ==================== APPLICATION STARTUPS ==================== 
 
-// Start Bolt App  
+// Start Bolt app  
 (async () => {
   const boltPort = process.env.PORT1;
   if (!boltPort) {
@@ -193,7 +193,7 @@ boltApp.message(async ({ message, say, next }) => {
 // Send test message to #legalgpt-test channel
 sendTestMessage(process.env.TEST_CHANNEL_ID);
 
-// Start Express App
+// Start Express app
 
 expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
