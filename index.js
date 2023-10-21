@@ -69,8 +69,7 @@ if (!port) {
 
 // Parse JSON request bodies (to debut Slack's url_verification of Replit endpoint)
 expressApp.use(express.json()); 
-//Log incoming request headers and body.
-expressApp.use((req, res, next) => {
+expressApp.use((req, res, next) => { //Log incoming request headers and body.
   console.log('Request Headers:', req.headers);
   console.log('Request Body:', req.body);
   next();
@@ -126,6 +125,12 @@ const botMemberID = process.env.BOT_MEMBER_ID;
 
 // Variable to track if the bot is paused
 let isPaused = false;
+
+// Create Express debug endpoint
+expressApp.get("/debug", (req, res) => {  // https://slack2gpt-main2.augierakow.repl.co/debug 
+ console.log(userHistories);   // Log userHistories object content to console
+  res.json(userHistories);   // Send userHistories object itself to browser 
+});
 
 // Listen for "@pause"
 boltApp.message(/@pause/, async ({ say }) => {
@@ -197,12 +202,6 @@ boltApp.message(async ({ message, say, next }) => {
   const userQuery = message.text;
   const gptResponse = await fetchOpenAIResponse(userQuery);
   await say(`Hello <@${message.user}>, ${gptResponse}`);
-});
-
-// Create Express debug endpoint
-expressApp.get("/debug", (req, res) => {  // https://slack2gpt-main2.augierakow.repl.co/debug 
- console.log(userHistories);   // Log userHistories object content to console
-  res.json(userHistories);   // Send userHistories object itself to browser 
 });
 
 // End of program
