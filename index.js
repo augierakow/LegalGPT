@@ -1,8 +1,6 @@
-// Import environment variables
+// Environment variables
 import dotenv from 'dotenv';
 dotenv.config();
-
-// Log status of environmet variables
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
@@ -10,7 +8,7 @@ console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
-//  Import dependencies
+//  Dependencies
 import express from "express";
 import { Configuration, OpenAIApi } from "openai";
 import pkg from '@slack/bolt';
@@ -45,6 +43,15 @@ if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
 
+// Parse JSON request bodies (to debut Slack's url_verification of Replit endpoint)
+expressApp.use(express.json()); 
+//Log incoming request headers and body.
+expressApp.use((req, res, next) => {
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
+  next();
+});
+
 // Start the Express App
 expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
@@ -59,16 +66,6 @@ expressApp.get("/", async (req, res) => {
     console.error("Error details:", error);
     res.status(500).send("An error occurred");
   }
-});
-
-// Use to debug Slack's url_verification of Replit endpoint.  
-// Parse JSON request bodies
-expressApp.use(express.json());
-//Log incoming request headers and body.
-expressApp.use((req, res, next) => {
-  console.log('Request Headers:', req.headers);
-  console.log('Request Body:', req.body);
-  next();
 });
 
 // Initialize in-memory store as JavaScript object
@@ -207,3 +204,4 @@ expressApp.get("/debug", (req, res) => {
   // Send message to browser (doens't mean message is true). COMMENTED OUT TO USE res.json() INSTEAD
   // res.send("Printed userHistories to console");  
 });
+// End of program
