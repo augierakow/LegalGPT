@@ -1,10 +1,15 @@
 // ---------- Environtment Variables & Configurations ----------
 
-// Environment variables
+//  Dependencies
+import express from "express";
+import { Configuration, OpenAIApi } from "openai";
+import pkg from '@slack/bolt';
+
+// Load environment variabnles from .env file
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Log environment variables
+// Check if environment variables are set
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
@@ -12,10 +17,9 @@ console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
-//  Dependencies
-import express from "express";
-import { Configuration, OpenAIApi } from "openai";
-import pkg from '@slack/bolt';
+// Move middlewares here?
+
+// ---------- OpenAI API Functions ----------
 
 // Fetch OpenAI Response
 async function fetchOpenAIResponse(userQuery) {
@@ -36,7 +40,6 @@ async function fetchOpenAIResponse(userQuery) {
     return "An error occurred while fetching data from OpenAI";
   }
 }
-
 
 // ---------- Slack & Bolt Configurations ----------
 
@@ -59,6 +62,29 @@ const boltApp = new App({
   await boltApp.start(boltPort);
   console.log(`⚡️ Bolt app is running on port ${boltPort}!`);
 })();
+
+// Define function to send test Slack message to given channel
+const sendTestMessage = async (channelId) => {
+  try {
+    const result = await web.chat.postMessage({
+      text: 'This is a test message',
+      channel: channelId,
+    });
+
+    console.log(`Message sent: ${result.ts}`);
+  } catch (error) {
+    console.error(`Error sending message: ${error}`);
+  }
+};
+
+// Import the WebClient class from the @slack/web-api package
+import { WebClient } from '@slack/web-api';
+
+// Initialize a new instance of the WebClient class with your bot token
+const web = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+// Send test message to #legalgpt-test channel
+sendTestMessage(process.env.TEST_CHANNEL_ID);
 
 // Initialize Express App
 const expressApp = express();
@@ -94,31 +120,6 @@ expressApp.get("/", async (req, res) => {
 // Initialize in-memory store as JavaScript object
 const userHistories = {};
 
-// Node.js code snippet to manually make bot send a message using Slack API
-// Import the WebClient class from the @slack/web-api package
-import { WebClient } from '@slack/web-api';
-
-// Initialize a new instance of the WebClient class with your bot token
-const web = new WebClient(process.env.SLACK_BOT_TOKEN);
-
-// Define a function to send a test message
-const sendTestMessage = async (channelId) => {
-  try {
-    // Call the chat.postMessage method using the WebClient
-    const result = await web.chat.postMessage({
-      text: 'This is a test message',
-      channel: channelId,
-    });
-
-    console.log(`Message sent: ${result.ts}`);
-  } catch (error) {
-    console.error(`Error sending message: ${error}`);
-  }
-};
-
-// Send test message to #legalgpt-test channel
-sendTestMessage(process.env.TEST_CHANNEL_ID);
-
 // Listen for Slack messages
 const myMemberID = process.env.MY_MEMBER_ID;
 const botMemberID = process.env.BOT_MEMBER_ID;
@@ -126,7 +127,7 @@ const botMemberID = process.env.BOT_MEMBER_ID;
 // Variable to track if the bot is paused
 let isPaused = false;
 
-// Create Express debug endpoint
+// Create Express endpoint to debug userHistories
 expressApp.get("/debug", (req, res) => {  // https://slack2gpt-main2.augierakow.repl.co/debug 
  console.log(userHistories);   // Log userHistories object content to console
   res.json(userHistories);   // Send userHistories object itself to browser 
