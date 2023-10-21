@@ -1,6 +1,8 @@
-// Environment variables
+// Import environment variables
 import dotenv from 'dotenv';
 dotenv.config();
+
+// Log status of environmet variables
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
@@ -8,7 +10,7 @@ console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
 
-//  Dependencies
+//  Import dependencies
 import express from "express";
 import { Configuration, OpenAIApi } from "openai";
 import pkg from '@slack/bolt';
@@ -43,15 +45,6 @@ if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
 
-// Parse JSON request bodies (to debut Slack's url_verification of Replit endpoint)
-expressApp.use(express.json()); 
-//Log incoming request headers and body.
-expressApp.use((req, res, next) => {
-  console.log('Request Headers:', req.headers);
-  console.log('Request Body:', req.body);
-  next();
-});
-
 // Start the Express App
 expressApp.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`);
@@ -68,11 +61,22 @@ expressApp.get("/", async (req, res) => {
   }
 });
 
+// Use to debug Slack's url_verification of Replit endpoint.  
+// Parse JSON request bodies
+expressApp.use(express.json());
+//Log incoming request headers and body.
+expressApp.use((req, res, next) => {
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
+  next();
+});
+
 // Initialize in-memory store as JavaScript object
 const userHistories = {};
 
-// Import the WebClient and ErrorCode classes from the @slack/web-api package
-import { WebClient, ErrorCode } from '@slack/web-api';
+// Node.js code snippet to manually make bot send a message using Slack API
+// Import the WebClient class from the @slack/web-api package
+import { WebClient } from '@slack/web-api';
 
 // Initialize a new instance of the WebClient class with your bot token
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
@@ -85,15 +89,10 @@ const sendTestMessage = async (channelId) => {
       text: 'This is a test message',
       channel: channelId,
     });
+
     console.log(`Message sent: ${result.ts}`);
   } catch (error) {
-    if (error.code === ErrorCode.PlatformError) {
-      console.error(`Slack API returned an error: ${error.message}`);
-    } else if (error.code === ErrorCode.RateLimitedError) {
-      console.error(`Rate-limited by Slack API. Retry after: ${error.original.retries}`);
-    } else {
-      console.error(`Error sending message: ${error}`);
-    }
+    console.error(`Error sending message: ${error}`);
   }
 };
 
@@ -123,69 +122,64 @@ boltApp.message(/@resume/, async ({ say }) => {
 
 // Message handler checks for certain conditions to ignore or send to OpenAI
 boltApp.message(async ({ message, say, next }) => {
-  try {
-    // Skip if message is undefined   
-    if (!message.text) {
-      console.log('Message text is undefined, skipping.');
+
+  // Skip if message is undefined   
+  if (!message.text) {
+    console.log('Message text is undefined, skipping.');
+    return;
+  }
+
+  // Skip if message is from the bot itself
+  if (message.user === botMemberID) {
+    console.log('Message is from the bot, skipping.');
+    return;
+  }
+
+  // Skip messages for Augie (using backticks for template literals)
+  if (message.text.includes(`<@${myMemberID}>`)) {
+    console.log('Message is for Augie, skipping.');
+    return;
+  }
+
+  // Skip messages from Augie if they don't include @LegalGPT (using backticks)
+  if (message.user === myMemberID) {
+    if (!message.text.includes(`<@${botMemberID}>`)) {
+      console.log('Message is from Augie without @LegalGPT, skipping.');
       return;
+    } else {
+      console.log('Message is from Augie with @LegalGPT, processing.');
     }
-  
-    // Skip if message is from the bot itself
-    if (message.user === botMemberID) {
-      console.log('Message is from the bot, skipping.');
-      return;
-    }
-  
-    // Skip messages for Augie (using backticks for template literals)
-    if (message.text.includes(`<@${myMemberID}>`)) {
-      console.log('Message is for Augie, skipping.');
-      return;
-    }
-  
-    // Skip messages from Augie if they don't include @LegalGPT (using backticks)
-    if (message.user === myMemberID) {
-      if (!message.text.includes(`<@${botMemberID}>`)) {
-        console.log('Message is from Augie without @LegalGPT, skipping.');
-        return;
-      } else {
-        console.log('Message is from Augie with @LegalGPT, processing.');
-      }
-    }
-  
-    // Skip messages saying users joined or were added
-    if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
-      await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
-      return;
-    }
-  
-    // Check User ID for userHistories object.    
-    if (!userHistories[message.user]) userHistories[message.user] = [];
-    //  Add message to userHistories object. Two-property array: role ("user"), content (message text) 
-    userHistories[message.user].push({ role: "user", content: message.text });
-    //  Log content of userHistories  
-    console.log('Updated userHistories:', userHistories);  // FAILS TO LOG UPDATED USER HISTORIES
-  
-    //  Log details of userHistories update message handling 
-    console.log(`User ${message.user} sent message: ${message.text}`);  // NEED TO TEST THIS
-  
-    // Log received message. 
-    console.log(`Received message: ${message.text}`)
-  
-    // Do nothing if paused
-    if (isPaused) return;
-    if (['@pause', '@resume'].includes(message.text)) return next();
-    const userQuery = message.text;
-    const gptResponse = await fetchOpenAIResponse(userQuery);
-    await say(`Hello <@${message.user}>, ${gptResponse}`);
-  } catch (error) {  // This is where the catch block starts
-    console.error(`Error in message handling: ${error}`);
-    await say("Sorry, an error occurred while processing your request.");
-  }  // This is where the catch block ends
+  }
+
+  // Skip messages saying users joined or were added
+  if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
+    await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
+    return;
+  }
+
+  // Check User ID for userHistories object.    
+  if (!userHistories[message.user]) userHistories[message.user] = [];
+  //  Add message to userHistories object. Two-property array: role ("user"), content (message text) 
+  userHistories[message.user].push({ role: "user", content: message.text });
+  //  Log content of userHistories  
+  console.log('Updated userHistories:', userHistories);  // FAILS TO LOG UPDATED USER HISTORIES
+
+  //  Log details of userHistories update message handling 
+  console.log(`User ${message.user} sent message: ${message.text}`);  // NEED TO TEST THIS
+
+  // Log received message. 
+  console.log(`Received message: ${message.text}`)
+
+  // Do nothing if paused
+  if (isPaused) return;
+  if (['@pause', '@resume'].includes(message.text)) return next();
+  const userQuery = message.text;
+  const gptResponse = await fetchOpenAIResponse(userQuery);
+  await say(`Hello <@${message.user}>, ${gptResponse}`);
 });
 
 // Fetch OpenAI Response
-async function fetchOpenAIResponse(userQuery, retryCount = 0) {
-  const maxRetries = 5;  // Adjustable
+async function fetchOpenAIResponse(userQuery) {
   try {
     console.log(`Sending query to OpenAI: ${userQuery}`);
     const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
@@ -199,18 +193,8 @@ async function fetchOpenAIResponse(userQuery, retryCount = 0) {
     console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
     return response.data.choices[0].message.content;
   } catch (error) {
-    if (error.response && error.response.status === 429) {
-      if (retryCount >= maxRetries) {
-        console.log(`Max retries reached. Not retrying.`);
-        return "An error occurred: Maximum retry limit reached";
-      }
-      console.log('OpenAI API rate limit exceeded. Retrying after 5 seconds.');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      return fetchOpenAIResponse(userQuery, retryCount + 1);
-    } else {
-      console.error("OpenAI API Error:", error);
-      return "An error occurred while fetching data from OpenAI";
-    }
+    console.error("OpenAI API Error:", error);
+    return "An error occurred while fetching data from OpenAI";
   }
 }
 
@@ -223,4 +207,3 @@ expressApp.get("/debug", (req, res) => {
   // Send message to browser (doens't mean message is true). COMMENTED OUT TO USE res.json() INSTEAD
   // res.send("Printed userHistories to console");  
 });
-// End of program
