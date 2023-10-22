@@ -1,4 +1,4 @@
-////// ==================== CONFIGS & INITS ====================
+////// ======== CONFIGS & INITS ========
 
 //  Import dependencies
 import express from "express";
@@ -7,7 +7,7 @@ import pkg from '@slack/bolt';
 import dotenv from 'dotenv';
 import { WebClient } from '@slack/web-api';
 
-// Load environment variables from .env file and verify status
+// Load environment variables from .env file, and verify status
 dotenv.config();
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
@@ -33,15 +33,17 @@ let isPaused = false; // Variable to track if the bot is paused
 const myMemberID = process.env.MY_MEMBER_ID; // For listeners 
 const botMemberID = process.env.BOT_MEMBER_ID; // For listeners
 
-// Initialize Express app & middleware
+// Initialize Express app
 const expressApp = express();
 const port = process.env.PORT2;
 if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
-expressApp.use(express.json()); // Parse JSON requests 
 
-////// ==================== EXPRESS ROUTES & MIDDELWARE ====================
+////// ======== EXPRESS ROUTES & MIDDELWARE ========
+
+// Set up middlware to parse JSON requests
+expressApp.use(express.json()); 
 
 // Log request headers & body for debugging - eg, to debug Slack's url_verification
 expressApp.use((req, res, next) => {
@@ -67,7 +69,7 @@ expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.r
   res.json(userHistory);   // Send userHistory object itself to browser 
 });
 
-////// ==================== APPLICATION LOGIC ====================
+////// ======== APPLICATION LOGIC ========
 
 // Define helper function to fetch responses from OpenAI, with retry
 async function fetchOpenAIResponse(userQuery, retryAttempts = 5) {
@@ -93,7 +95,7 @@ async function fetchOpenAIResponse(userQuery, retryAttempts = 5) {
   }
 }
 
-//// -------- Slack Bot Functions --------
+//// --- Slack Bot Functions ---
 
 // Function to send test message to a given channel
 const sendTestMessage = async (channelId) => {
@@ -109,7 +111,7 @@ const sendTestMessage = async (channelId) => {
   }
 };
 
-//// -------- Slack Message Listeners --------
+//// --- Slack Message Listeners ---
 
 // Listen for "@pause"
 boltApp.message(/@pause/, async ({ say }) => {
@@ -186,7 +188,7 @@ boltApp.message(async ({ message, say, next }) => {
   }
 });
 
-////// ==================== APPLICATION STARTUPS ==================== 
+////// ======== APPLICATION STARTUPS ======== 
 
 // Start Bolt app  
 (async () => {
