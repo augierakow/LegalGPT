@@ -7,7 +7,7 @@ import { WebClient } from '@slack/web-api';
 import { Configuration, OpenAIApi } from "openai";
 import express from "express";
 
-// Load environment variables from .env file, nd verify status
+// Load environment variables from .env file, and verify status
 dotenv.config();
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
