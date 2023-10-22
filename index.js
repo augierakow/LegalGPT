@@ -1,13 +1,13 @@
 ////// ======== CONFIGS & INITS ========
 
 //  Import dependencies
-import express from "express";
-import { Configuration, OpenAIApi } from "openai";
-import pkg from '@slack/bolt';
 import dotenv from 'dotenv';
+import pkg from '@slack/bolt';
 import { WebClient } from '@slack/web-api';
+import { Configuration, OpenAIApi } from "openai";
+import express from "express";
 
-// Load environment variables from .env file, and verify status
+// Load environment variables from .env file, nd verify status
 dotenv.config();
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
@@ -42,7 +42,7 @@ if (!port) {
 
 ////// ======== EXPRESS ROUTES & MIDDELWARE ========
 
-// Set up middlware to parse JSON requests
+// Parse JSON requests
 expressApp.use(express.json()); 
 
 // Log request headers & body for debugging - eg, to debug Slack's url_verification
