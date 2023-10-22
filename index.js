@@ -1,4 +1,4 @@
-////// ======== CONFIGS & INITS ========
+////// ===== CONFIGS & INITS =====
 
 //  Import dependencies
 import dotenv from 'dotenv';
@@ -40,7 +40,7 @@ if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
 
-////// ======== EXPRESS ROUTES & MIDDELWARE ========
+////// ===== EXPRESS ROUTES & MIDDELWARE =====
 
 // Parse JSON requests
 expressApp.use(express.json()); 
@@ -69,7 +69,7 @@ expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.r
   res.json(userHistory);   // Send userHistory object itself to browser 
 });
 
-////// ======== APPLICATION LOGIC ========
+////// ===== APPLICATION LOGIC =====
 
 // Define helper function to fetch responses from OpenAI, with retry
 async function fetchOpenAIResponse(userQuery, retryAttempts = 5) {
@@ -188,7 +188,7 @@ boltApp.message(async ({ message, say, next }) => {
   }
 });
 
-////// ======== APPLICATION STARTUPS ======== 
+////// ===== APPLICATION STARTUPS ===== 
 
 // Start Bolt app  
 (async () => {
