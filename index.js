@@ -63,7 +63,7 @@ expressApp.get("/", async (req, res) => {
   }
 });
 
-//  Set endpoint for viewing userHistory
+//  Set endpoint for viewing userHistory object (JSON)
 expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.repl.co/debug 
   console.log(userHistory);   // Log userHistory object content to console
   res.json(userHistory);   // Send userHistory object itself to browser 
@@ -97,7 +97,7 @@ async function fetchOpenAIResponse(userQuery, retryAttempts = 5) {
 
 //// --- Slack Bot Functions ---
 
-// Function to send test message to a given channel
+// Define function to send test message to a given channel
 const sendTestMessage = async (channelId) => {
   try {
     const result = await web.chat.postMessage({
@@ -130,7 +130,10 @@ boltApp.message(/@resume/, async ({ say }) => {
 // Main Message Handler for Slack messages
 boltApp.message(async ({ message, say, next }) => {
   try {
-    // Skip if message is undefined   
+
+    //// --- Conditional Logic ---
+    
+    // Skip if message text is undefined (empty)   
     if (!message.text) {
       console.log('Message text is undefined, skipping.');
       return;
@@ -142,13 +145,19 @@ boltApp.message(async ({ message, say, next }) => {
       return;
     }
 
-    // Skip messages for Augie (using backticks for template literals)
+    // Skip messages saying "user joined" or "user added"
+    if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
+      await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
+      return;
+    }
+
+    // Skip messages for Augie
     if (message.text.includes(`<@${myMemberID}>`)) {
       console.log('Message is for Augie, skipping.');
       return;
     }
-
-    // Skip messages from Augie if they don't include @LegalGPT (using backticks)
+    
+    // Skip messages from Augie that DON'T include @LegalGPT
     if (message.user === myMemberID) {
       if (!message.text.includes(`<@${botMemberID}>`)) {
         console.log('Message is from Augie without @LegalGPT, skipping.');
@@ -158,28 +167,30 @@ boltApp.message(async ({ message, say, next }) => {
       }
     }
 
-    // Skip messages saying users joined or were added
-    if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
-      await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
-      return;
-    }
+    //  Log sender and message -- ONLY IF survived all conditional logic
+    console.log(`User ${message.user} sent message: ${message.text}`); 
 
-    // Check User ID for userHistory object.    
-    if (!userHistory[message.user]) userHistory[message.user] = [];
-    //  Add message to userHistory object. Two-property array: role ("user"), content (message text) 
+    //// --- userHistory ---
+    
+    // Check User ID for userHistory object, initialize if none [CORE FUNCITON]
+   if (!userHistory[message.user]) userHistory[message.user] = [];
+
+    // Log userHistory before update [DEBUGGING]
+    console.log('Before Update:', JSON.stringify(userHistory));  
+
+    //  Add message to userHistory object [CORE FUNCTION]
     userHistory[message.user].push({ role: "user", content: message.text });
-    //  Log content of userHistory  
-    console.log('Updated userHistory:', userHistory);  // FAILS TO LOG UPDATED USER HISTORIES
+ 
+    // Log userHistory after update [DEBUGGING]
+    console.log('After Update:', JSON.stringify(userHistory));  
 
-    //  Log details of userHistory update message handling 
-    console.log(`User ${message.user} sent message: ${message.text}`);  // NEED TO TEST THIS
-
-    // Log received message. 
-    console.log(`Received message: ${message.text}`)
-
+    //// --- Message processing (if not skipped) ---
+    
     // Do nothing if paused
     if (isPaused) return;
     if (['@pause', '@resume'].includes(message.text)) return next();
+
+    // Pass message to OpenAI as userQuery 
     const userQuery = message.text;
     const gptResponse = await fetchOpenAIResponse(userQuery);
     await say(`Hello <@${message.user}>, ${gptResponse}`);
