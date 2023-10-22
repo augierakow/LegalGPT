@@ -65,8 +65,8 @@ expressApp.get("/", async (req, res) => {
 
 //  Set endpoint for viewing userHistory object (JSON)
 expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.repl.co/debug 
-  console.log(userHistory);   // Log userHistory object content to console
-  res.json(userHistory);   // Send userHistory object itself to browser 
+  console.log(userHistory);   // Log userHistory object content to server console
+  res.json(userHistory);   // Send userHistory object itself to clielnt browser 
 });
 
 ////// ===== APPLICATION LOGIC =====
@@ -216,7 +216,7 @@ sendTestMessage(process.env.TEST_CHANNEL_ID);
 
 // Start Express app
 expressApp.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}`);
+  console.log(`🚄 Express app is listening on port ${port}!`);
 });
 
 // End of program
