@@ -69,22 +69,27 @@ expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.r
 
 ////// ==================== APPLICATION LOGIC ====================
 
-// Define helper function to fetch responses from OpenAI
-async function fetchOpenAIResponse(userQuery) {
-  try {
-    console.log(`Sending query to OpenAI: ${userQuery}`);
-    const promptMessage = [
-      { role: "user", content: userQuery }
-    ];
-    const response = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: promptMessage
-    });
-    console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
-    return response.data.choices[0].message.content;
-  } catch (error) {
-    console.error("OpenAI API Error:", error);
-    return "An error occurred while fetching data from OpenAI";
+// Define helper function to fetch responses from OpenAI, with retry
+async function fetchOpenAIResponse(userQuery, retryAttempts = 5) {
+  let response;
+  for (let i = 0; i < retryAttempts; i++) {
+    try {
+      console.log(`Attempt ${i + 1}: Sending query to OpenAI: ${userQuery}`);
+      const promptMessage = [
+        { role: "user", content: userQuery }
+      ];
+      response = await openai.createChatCompletion({
+        model: "gpt-4",
+        messages: promptMessage
+      });
+      console.log(`Received response from OpenAI: ${response.data.choices[0].message.content}`);
+      return response.data.choices[0].message.content;
+    } catch (error) {
+      console.error(`Attempt ${i + 1} failed: OpenAI API Error:`, error);
+      if (i === retryAttempts - 1) {
+        return "An error occurred while fetching data from OpenAI after multiple attempts.";
+      }
+    }
   }
 }
 
