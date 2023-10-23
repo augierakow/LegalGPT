@@ -28,7 +28,25 @@ const boltApp = new App({
   token: botToken
 });
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
-const userHistory = {}; // Initialize in-memory store as JavaScript object
+
+/* THIS VERSION HARD-CODES THE userHistory OBJECT.  THIS WORKS.
+const userHistory = {
+  "testUser1": [
+    { role: "user", content: "Test Message 1" },
+    { role: "bot", content: "Test Reply 1" }
+  ],
+  "testUser2": [
+    { role: "user", content: "Test Message 2" },
+    { role: "bot", content: "Test Reply 2" }
+  ]
+};
+*/
+
+// This version leaves the `userHistory` object to be Slack messages pushed to the ojbect by the `userHistory.push()` function (below)  
+const userHistory = {}
+
+
+// Initialize in-memory store as JavaScript object
 let isPaused = false; // Variable to track if the bot is paused
 const myMemberID = process.env.MY_MEMBER_ID; // For listeners 
 const botMemberID = process.env.BOT_MEMBER_ID; // For listeners
@@ -43,9 +61,9 @@ if (!port) {
 ////// ===== EXPRESS ROUTES & MIDDELWARE =====
 
 // Parse JSON requests
-expressApp.use(express.json()); 
+expressApp.use(express.json());
 
-// Log request headers & body for debugging - eg, to debug Slack's url_verification
+// Log request headers & body for debugging - eg, to debug Slack's url_verification 
 expressApp.use((req, res, next) => {
   console.log('Request Headers:', req.headers);
   console.log('Request Body:', req.body);
@@ -63,10 +81,18 @@ expressApp.get("/", async (req, res) => {
   }
 });
 
-//  Set endpoint for viewing userHistory object (JSON)
-expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.repl.co/debug 
-  console.log(userHistory);   // Log userHistory object content to server console
-  res.json(userHistory);   // Send userHistory object itself to clielnt browser 
+//  Set Expresss endpoint to view userHistory at https://slack2gpt-main2.augierakow.repl.co/debug (hard refresh browser)
+//  Log userHistory to console 
+//  This whole Express function executes only upon GET request, not at launch
+//  BUGS: ENDPOINT ONLY SHOWS EMPTY OBJECT '{}', CONSOLE DOESN'T SHOW LOG AT ALL
+expressApp.get("/userHistory", (req, res) => {
+  try {
+    console.log("GET /userHistory route called"); // DEBUGGER
+    res.json({userHistory: userHistory }); // SHOWING IN ENDPOINT BUT EMPTY (resolved?)
+    console.log('userHistory:', userHistory ); // NOT SHOWING IN LOG AT ALL
+  } catch (error) {
+    console.log("Error in GET /userHistory;", error); // DEBUGGER
+  }
 });
 
 ////// ===== APPLICATION LOGIC =====
@@ -74,7 +100,7 @@ expressApp.get("/debug", (req, res) => { // https://slack2gpt-main2.augierakow.r
 // Define helper function to fetch responses from OpenAI, with retry
 async function fetchOpenAIResponse(userQuery, retryAttempts = 5) {
   let response;
-  for (let i = 0; i < retryAttempts; i++) {
+  for (let i = 0; i < retryAttempts; i++) {    // UNDERSTAND BETTER
     try {
       console.log(`Attempt ${i + 1}: Sending query to OpenAI: ${userQuery}`);
       const promptMessage = [
@@ -132,7 +158,7 @@ boltApp.message(async ({ message, say, next }) => {
   try {
 
     //// --- Conditional Logic ---
-    
+
     // Skip if message text is undefined (empty)   
     if (!message.text) {
       console.log('Message text is undefined, skipping.');
@@ -147,7 +173,7 @@ boltApp.message(async ({ message, say, next }) => {
 
     // Skip messages saying "user joined" or "user added"
     if (message.subtype && (message.subtype === 'channel_join' || message.subtype === 'channel_add')) {
-      await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);
+      await say(`Welcome <@${message.user}>! Feel free to ask if you have any questions or need assistance.`);  // UNDERSTAND THIS BETTER
       return;
     }
 
@@ -156,7 +182,7 @@ boltApp.message(async ({ message, say, next }) => {
       console.log('Message is for Augie, skipping.');
       return;
     }
-    
+
     // Skip messages from Augie that DON'T include @LegalGPT
     if (message.user === myMemberID) {
       if (!message.text.includes(`<@${botMemberID}>`)) {
@@ -168,24 +194,24 @@ boltApp.message(async ({ message, say, next }) => {
     }
 
     //  Log sender and message -- ONLY IF survived all conditional logic
-    console.log(`User ${message.user} sent message: ${message.text}`); 
+    console.log(`User ${message.user} sent message: ${message.text}`);
 
     //// --- userHistory ---
-    
+
     // Check User ID for userHistory object, initialize if none [CORE FUNCITON]
-   if (!userHistory[message.user]) userHistory[message.user] = [];
+    if (!userHistory[message.user]) userHistory[message.user] = [];
 
     // Log userHistory before update [DEBUGGING]
-    console.log('Before Update:', JSON.stringify(userHistory));  
+    console.log('Before Update:', JSON.stringify(userHistory));
 
     //  Add message to userHistory object [CORE FUNCTION]
-    userHistory[message.user].push({ role: "user", content: message.text });
- 
+    userHistory[message.user].push({ role: "user", content: message.text });  // DEBUG FROM HERE?
+
     // Log userHistory after update [DEBUGGING]
-    console.log('After Update:', JSON.stringify(userHistory));  
+    console.log('After Update:', JSON.stringify(userHistory));
 
     //// --- Message processing (if not skipped) ---
-    
+
     // Do nothing if paused
     if (isPaused) return;
     if (['@pause', '@resume'].includes(message.text)) return next();
