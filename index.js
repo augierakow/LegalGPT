@@ -212,7 +212,7 @@ boltApp.message(async ({ message, say, next }) => {
     userHistoryUpdatePromise = new Promise((resolve, reject) => {      // Promise to update userHistory
 
     //  Add message to userHistory object [CORE FUNCTION]
-    userHistory[message.user].push({ role: "user", content: message.txt });  // content: "Banana 208" ,  content: message.text
+    userHistory[message.user].push({ role: "user", content: message.text });  // content: "Banana 208" ,  content: message.text
 
       // Resolve the Promise indicating the update to userHistory is done
         resolve();
