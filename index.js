@@ -43,7 +43,7 @@ const userHistory = {
 */
 
 // This version leaves the `userHistory` object to be Slack messages pushed to the ojbect by the `userHistory.push()` function (below)  
-const userHistory = {}
+const userHistory = {}   // "Banana 46" no brackets, {}
 
 
 // Initialize in-memory store as JavaScript object
@@ -81,15 +81,15 @@ expressApp.get("/", async (req, res) => {
   }
 });
 
-//  Set Expresss endpoint to view userHistory at https://slack2gpt-main2.augierakow.repl.co/debug (hard refresh browser)
+//  Set Expresss endpoint to view userHistory at https://slack2gpt-main2.augierakow.repl.co/userHistory (hard refresh browser)
 //  Log userHistory to console 
 //  This whole Express function executes only upon GET request, not at launch
 //  BUGS: ENDPOINT ONLY SHOWS EMPTY OBJECT '{}', CONSOLE DOESN'T SHOW LOG AT ALL
 expressApp.get("/userHistory", (req, res) => {
   try {
     console.log("GET /userHistory route called"); // DEBUGGER
-    res.json({userHistory: userHistory }); // SHOWING IN ENDPOINT BUT EMPTY (resolved?)
-    console.log('userHistory:', userHistory ); // NOT SHOWING IN LOG AT ALL
+    res.json({userHistory: userHistory }); // 'Banana 91' , userHistory
+    console.log('userHistory:', userHistory ); // 'Banana 92' , userHistory
   } catch (error) {
     console.log("Error in GET /userHistory;", error); // DEBUGGER
   }
@@ -205,7 +205,7 @@ boltApp.message(async ({ message, say, next }) => {
     console.log('Before Update:', JSON.stringify(userHistory));
 
     //  Add message to userHistory object [CORE FUNCTION]
-    userHistory[message.user].push({ role: "user", content: message.text });  // DEBUG FROM HERE?
+    userHistory[message.user].push({ role: "user", content: message.txt });  // content: "Banana 208" ,  content: message.text 
 
     // Log userHistory after update [DEBUGGING]
     console.log('After Update:', JSON.stringify(userHistory));
