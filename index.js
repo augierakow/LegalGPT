@@ -42,7 +42,7 @@ const userHistory = {
 };
 */
 
-// This version leaves the `userHistory` object to be Slack messages pushed to the ojbect by the `userHistory.push()` function (below)  
+// This version leaves the `userHistory` object empty until Slack messages arep ushed to the object by the `userHistory.push()` function (below)  
 const userHistory = {}
 
 
