@@ -63,12 +63,14 @@ if (!port) {
 // Parse JSON requests
 expressApp.use(express.json());
 
+/*  COMMENTED OUT TO REDUCE CONSOLE VERBOSITY 
 // Log request headers & body for debugging - eg, to debug Slack's url_verification 
 expressApp.use((req, res, next) => {
   console.log('Request Headers:', req.headers);
   console.log('Request Body:', req.body);
   next();
 });
+*/
 
 // Test OpenAI API query via GET route 
 expressApp.get("/", async (req, res) => {
@@ -98,7 +100,7 @@ expressApp.get("/userHistory", (req, res) => {
 ////// ===== APPLICATION LOGIC =====
 
 // Define helper function to fetch responses from OpenAI, with retry
-async function fetchOpenAIResponse(userQuery, retryAttempts = 2) {
+async function fetchOpenAIResponse(userQuery, retryAttempts = 1) {
   let response;
   for (let i = 0; i < retryAttempts; i++) {    // UNDERSTAND BETTER
     try {
@@ -127,7 +129,7 @@ async function fetchOpenAIResponse(userQuery, retryAttempts = 2) {
 const sendTestMessage = async (channelId) => {
   try {
     const result = await web.chat.postMessage({
-      text: 'This is a test message',
+      text: 'This is a test message', // Is this executing?
       channel: channelId,
     });
 
