@@ -98,7 +98,7 @@ expressApp.get("/userHistory", (req, res) => {
 ////// ===== APPLICATION LOGIC =====
 
 // Define helper function to fetch responses from OpenAI, with retry
-async function fetchOpenAIResponse(userQuery, retryAttempts = 5) {
+async function fetchOpenAIResponse(userQuery, retryAttempts = 2) {
   let response;
   for (let i = 0; i < retryAttempts; i++) {    // UNDERSTAND BETTER
     try {
@@ -153,6 +153,8 @@ boltApp.message(/@resume/, async ({ say }) => {
   return;
 });
 
+let userHistoryUpdatePromise = Promise.resolve();  // Initialize a Promise that's immediately resolved
+
 // Main Message Handler for Slack messages
 boltApp.message(async ({ message, say, next }) => {
   try {
@@ -201,13 +203,20 @@ boltApp.message(async ({ message, say, next }) => {
     // Check User ID for userHistory object, initialize if none [CORE FUNCITON]
     if (!userHistory[message.user]) userHistory[message.user] = [];
 
-    // Log userHistory before update [DEBUGGING]
+    // Log userHistory BEFORE update [DEBUGGING]
     console.log('Before Update:', JSON.stringify(userHistory));
 
-    //  Add message to userHistory object [CORE FUNCTION]
-    userHistory[message.user].push({ role: "user", content: message.txt });  // content: "Banana 208" ,  content: message.text 
+    // Update the userHistoryUpdatePromise
+    userHistoryUpdatePromise = new Promise((resolve, reject) => {      // Promise to update userHistory
 
-    // Log userHistory after update [DEBUGGING]
+    //  Add message to userHistory object [CORE FUNCTION]
+    userHistory[message.user].push({ role: "user", content: message.txt });  // content: "Banana 208" ,  content: message.text
+
+      // Resolve the Promise indicating the update to userHistory is done
+        resolve();
+      });
+
+    // Log userHistory AFTER update [DEBUGGING]
     console.log('After Update:', JSON.stringify(userHistory));
 
     //// --- Message processing (if not skipped) ---
