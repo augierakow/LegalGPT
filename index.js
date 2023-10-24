@@ -42,8 +42,9 @@ const userHistory = {
 };
 */
 
-// This version leaves the `userHistory` object to be Slack messages pushed to the ojbect by the `userHistory.push()` function (below)  
-const userHistory = {}   // "Banana 46" no brackets, {}
+
+// This version leaves the `userHistory` object empty until Slack messages arep ushed to the object by the `userHistory.push()` function (below)  
+const userHistory = {}
 
 
 // Initialize in-memory store as JavaScript object
