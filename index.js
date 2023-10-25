@@ -69,11 +69,12 @@ expressApp.get("/", async (req, res) => {
 });
 
 //  This whole Express function executes only upon GET request, not at launch
+//  https://slack2gpt-main2.augierakow.repl.co/userHistory 
 //  BUG: EXPRESS ENDPOINT AND CONSOLE LOG ONLY SHOW EMPTY OBJECT '{}'
-expressApp.get("/userHistory", (req, res) => {ß
+expressApp.get("/userHistory", (req, res) => {ß  
   try {
     console.log("GET /userHistory route called"); 
-    res.json({userHistory: userHistory }); // https://slack2gpt-main2.augierakow.repl.co/userHistory
+    res.json({userHistory: userHistory }); 
     console.log('userHistory:', userHistory ); 
   } catch (error) {
     console.log("Error in GET /userHistory;", error); 
