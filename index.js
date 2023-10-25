@@ -29,28 +29,14 @@ const boltApp = new App({
 });
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 
-/* THIS VERSION HARD-CODES THE userHistory OBJECT.  THIS WORKS.
-const userHistory = {
-  "testUser1": [
-    { role: "user", content: "Test Message 1" },
-    { role: "bot", content: "Test Reply 1" }
-  ],
-  "testUser2": [
-    { role: "user", content: "Test Message 2" },
-    { role: "bot", content: "Test Reply 2" }
-  ]
-};
-*/
-
-
-// This version leaves the `userHistory` object empty until Slack messages arep ushed to the object by the `userHistory.push()` function (below)  
+// The `userHistory` object is empty until the `userHistory.push()` function pushes Slack messages into the `userHistory` object.
 const userHistory = {}
 
 
 // Initialize in-memory store as JavaScript object
-let isPaused = false; // Variable to track if the bot is paused
-const myMemberID = process.env.MY_MEMBER_ID; // For listeners 
-const botMemberID = process.env.BOT_MEMBER_ID; // For listeners
+let isPaused = false; 
+const myMemberID = process.env.MY_MEMBER_ID; // For Slack Bolt message listeners 
+const botMemberID = process.env.BOT_MEMBER_ID; // For Slack Bolt message listeners
 
 // Initialize Express app
 const expressApp = express();
@@ -64,14 +50,12 @@ if (!port) {
 // Parse JSON requests
 expressApp.use(express.json());
 
-/*  COMMENTED OUT TO REDUCE CONSOLE VERBOSITY 
 // Log request headers & body for debugging - eg, to debug Slack's url_verification 
 expressApp.use((req, res, next) => {
   console.log('Request Headers:', req.headers);
   console.log('Request Body:', req.body);
   next();
 });
-*/
 
 // Test OpenAI API query via GET route 
 expressApp.get("/", async (req, res) => {
@@ -84,24 +68,22 @@ expressApp.get("/", async (req, res) => {
   }
 });
 
-//  Set Expresss endpoint to view userHistory at https://slack2gpt-main2.augierakow.repl.co/userHistory (hard refresh browser)
-//  Log userHistory to console 
 //  This whole Express function executes only upon GET request, not at launch
-//  BUGS: ENDPOINT ONLY SHOWS EMPTY OBJECT '{}', CONSOLE DOESN'T SHOW LOG AT ALL
-expressApp.get("/userHistory", (req, res) => {
+//  BUG: EXPRESS ENDPOINT AND CONSOLE LOG ONLY SHOW EMPTY OBJECT '{}'
+expressApp.get("/userHistory", (req, res) => {ß
   try {
-    console.log("GET /userHistory route called"); // DEBUGGER
-    res.json({userHistory: userHistory }); // 'Banana 91' , userHistory
-    console.log('userHistory:', userHistory ); // 'Banana 92' , userHistory
+    console.log("GET /userHistory route called"); 
+    res.json({userHistory: userHistory }); // https://slack2gpt-main2.augierakow.repl.co/userHistory
+    console.log('userHistory:', userHistory ); 
   } catch (error) {
-    console.log("Error in GET /userHistory;", error); // DEBUGGER
+    console.log("Error in GET /userHistory;", error); 
   }
 });
 
 ////// ===== APPLICATION LOGIC =====
 
 // Define helper function to fetch responses from OpenAI, with retry
-async function fetchOpenAIResponse(userQuery, retryAttempts = 1) {
+async function fetchOpenAIResponse(userQuery, retryAttempts = 2) {
   let response;
   for (let i = 0; i < retryAttempts; i++) {    // UNDERSTAND BETTER
     try {
@@ -126,11 +108,11 @@ async function fetchOpenAIResponse(userQuery, retryAttempts = 1) {
 
 //// --- Slack Bot Functions ---
 
-// Define function to send test message to a given channel
+// Define function to send test message to Slack channel
 const sendTestMessage = async (channelId) => {
   try {
     const result = await web.chat.postMessage({
-      text: 'This is a test message', // Is this executing?
+      text: 'This is a test message', 
       channel: channelId,
     });
 
@@ -203,26 +185,26 @@ boltApp.message(async ({ message, say, next }) => {
 
     //// --- userHistory ---
 
-    // Check User ID for userHistory object, initialize if none [CORE FUNCITON]
+    // Check User ID for userHistory object, initialize if none 
     if (!userHistory[message.user]) userHistory[message.user] = [];
 
-    // Log userHistory BEFORE update [DEBUGGING]
-    console.log('Before Update:', JSON.stringify(userHistory));
+    // Log userHistory BEFORE update 
+    console.log('Before Update:', JSON.stringify(userHistory)); 
 
-    // Update the userHistoryUpdatePromise
-    userHistoryUpdatePromise = new Promise((resolve, reject) => {      // Promise to update userHistory
+    // Promise to update userHistory userHistoryUpdatePromise
+    userHistoryUpdatePromise = new Promise((resolve, reject) => {     
 
-    //  Add message to userHistory object [CORE FUNCTION]
-    userHistory[message.user].push({ role: "user", content: message.text });  // content: "Banana 208" ,  content: message.text
+    //  Add message to userHistory object 
+    userHistory[message.user].push({ role: "user", content: message.text });  
 
-      // Resolve the Promise indicating the update to userHistory is done
+      // Resolve the Promise indicating userHistory update is done
         resolve();
       });
 
-    // Log userHistory AFTER update [DEBUGGING]
+    // Log userHistory AFTER update 
     console.log('After Update:', JSON.stringify(userHistory));
 
-    //// --- Message processing (if not skipped) ---
+    //// --- Message processing (unskipped messages only) ---
 
     // Do nothing if paused
     if (isPaused) return;
