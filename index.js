@@ -81,16 +81,6 @@ expressApp.get("/userHistory", (req, res) => {
   }
 });
 
-// New Express /testUserHistory endpoint
-// Load this Express endpoint to update userHistory from within Express app, then reload /userHistory endpoint to see if object is updated with rest info
-expressApp.get("/testUserHistory", (req, res) => {
-  userHistory["testUser"] = [
-    { role: "user", content: "Test Message" },
-    { role: "bot", content: "Test Reply" }
-  ];
-  res.send("Updated userHistory for testUser.");
-});
-
 ////// ===== APPLICATION LOGIC =====
 
 // Define helper function to fetch responses from OpenAI, with retry
