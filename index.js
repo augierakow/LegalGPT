@@ -71,7 +71,7 @@ expressApp.get("/", async (req, res) => {
 //  This whole Express function executes only upon GET request, not at launch
 //  https://slack2gpt-main2.augierakow.repl.co/userHistory 
 //  BUG: EXPRESS ENDPOINT AND CONSOLE LOG ONLY SHOW EMPTY OBJECT '{}'
-expressApp.get("/userHistory", (req, res) => {ß  
+expressApp.get("/userHistory", (req, res) => {  
   try {
     console.log("GET /userHistory route called"); 
     res.json({userHistory: userHistory }); 
@@ -79,6 +79,16 @@ expressApp.get("/userHistory", (req, res) => {ß
   } catch (error) {
     console.log("Error in GET /userHistory;", error); 
   }
+});
+
+// New Express /testUserHistory endpoint
+// Load this Express endpoint to update userHistory from within Express app, then reload /userHistory endpoint to see if object is updated with rest info
+expressApp.get("/testUserHistory", (req, res) => {
+  userHistory["testUser"] = [
+    { role: "user", content: "Test Message" },
+    { role: "bot", content: "Test Reply" }
+  ];
+  res.send("Updated userHistory for testUser.");
 });
 
 ////// ===== APPLICATION LOGIC =====
