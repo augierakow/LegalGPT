@@ -1,31 +1,3 @@
-// Class branch
-
-class UserHistory {
-  constructor() {
-    this.history = {};
-  }
-
-  addUserMessage(userId, message) {
-    if (!this.history[userId]) this.history[userId] = [];
-    this.history[userId].push({ role: "user", content: message });
-  }
-
-  getUserHistory(userId) {
-    return this.history[userId];
-  }
-
-  getCompleteHistory() {
-    return this.history;
-  }
-
-  // Add more methods as needed
-}
-
-
-
-
-
-
 ////// ===== CONFIGS & INITS =====
 
 //  Import dependencies
@@ -177,7 +149,7 @@ boltApp.message(/@resume/, async ({ say }) => {
   return;
 });
 
-let userHistoryUpdatePromise = Promise.resolve();  // Initialize a Promise that's immediately resolved
+let userHistoryUpdatePromise = Promise.resolve();  // Initialize a Promise that's immediately resolved  PROMISE 
 
 // Main Message Handler for Slack messages
 boltApp.message(async ({ message, say, next }) => {
@@ -230,7 +202,7 @@ boltApp.message(async ({ message, say, next }) => {
     // Log userHistory BEFORE update 
     console.log('Before Update:', JSON.stringify(userHistory)); 
 
-    // Promise to update userHistory userHistoryUpdatePromise
+    // Promise to update userHistory  PROMISE
     userHistoryUpdatePromise = new Promise((resolve, reject) => {     
 
     //  Add message to userHistory object 
