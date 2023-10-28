@@ -51,13 +51,16 @@ if (!port) {
 expressApp.use(express.json());
 
 // Log request headers & body for debugging - eg, to debug Slack's url_verification 
+// Uses all incoming HTTP requests
 expressApp.use((req, res, next) => {
   console.log('Request Headers:', req.headers);
   console.log('Request Body:', req.body);
   next();
 });
 
-// Test OpenAI API query via GET route 
+// Test OpenAI API query via GET route. 
+// First Express endpoint. Executes only on GET request, not at launch. 
+// ttps://slack2gpt-main2.augierakow.repl.co/
 expressApp.get("/", async (req, res) => {
   try {
     const response = await fetchOpenAIResponse("Test Query");
@@ -68,9 +71,9 @@ expressApp.get("/", async (req, res) => {
   }
 });
 
-//  This whole Express function executes only upon GET request, not at launch
+//  Second Express endpoint. Executes only on GET request, not at launch. 
 //  https://slack2gpt-main2.augierakow.repl.co/userHistory 
-//  BUG: EXPRESS ENDPOINT AND CONSOLE LOG ONLY SHOW EMPTY OBJECT '{}'
+//  BUG: ONLY SHOWS `userHistory` UPDATES CREATED BY EXPRESS APP, NOT BOLT APP
 expressApp.get("/userHistory", (req, res) => {  
   try {
     console.log("GET /userHistory route called"); 
@@ -81,7 +84,7 @@ expressApp.get("/userHistory", (req, res) => {
   }
 });
 
-// Second Express /testUserHistory endpoint
+// Third Express endpoint.  Executes only on GET request, not at launch.
 // Load this Express endpoint to update userHistory from within Express app, then reload /userHistory endpoint to see if object is updated with rest info
 expressApp.get("/testUserHistory", (req, res) => {
   userHistory["testUser"] = [
@@ -149,8 +152,6 @@ boltApp.message(/@resume/, async ({ say }) => {
   return;
 });
 
-let userHistoryUpdatePromise = Promise.resolve();  // Initialize a Promise that's immediately resolved
-
 // Main Message Handler for Slack messages
 boltApp.message(async ({ message, say, next }) => {
   try {
@@ -202,15 +203,9 @@ boltApp.message(async ({ message, say, next }) => {
     // Log userHistory BEFORE update 
     console.log('Before Update:', JSON.stringify(userHistory)); 
 
-    // Promise to update userHistory userHistoryUpdatePromise
-    userHistoryUpdatePromise = new Promise((resolve, reject) => {     
-
     //  Add message to userHistory object 
     userHistory[message.user].push({ role: "user", content: message.text });  
-
-      // Resolve the Promise indicating userHistory update is done
-        resolve();
-      });
+    });
 
     // Log userHistory AFTER update 
     console.log('After Update:', JSON.stringify(userHistory));
@@ -230,7 +225,7 @@ boltApp.message(async ({ message, say, next }) => {
   }
 });
 
-////// ===== APPLICATION STARTUPS ===== 
+////// ===== START APPLICATIONS ===== 
 
 // Start Bolt app  
 (async () => {
