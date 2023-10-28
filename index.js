@@ -45,7 +45,9 @@ if (!port) {
   throw new Error("PORT2 environment variable is not set.");
 }
 
-////// ===== EXPRESS ROUTES & MIDDELWARE =====
+////// ===== EXPRESS MIDDLEWARE & ROUTES =====
+
+//// --- Express Middleware ---
 
 // Parse JSON requests
 expressApp.use(express.json());
@@ -57,6 +59,8 @@ expressApp.use((req, res, next) => {
   console.log('Request Body:', req.body);
   next();
 });
+
+//// --- Express Routes ---
 
 // Test OpenAI API query via GET route. 
 // First Express endpoint. Executes only on GET request, not at launch. 
@@ -205,7 +209,6 @@ boltApp.message(async ({ message, say, next }) => {
 
     //  Add message to userHistory object 
     userHistory[message.user].push({ role: "user", content: message.text });  
-    });
 
     // Log userHistory AFTER update 
     console.log('After Update:', JSON.stringify(userHistory));
@@ -214,7 +217,7 @@ boltApp.message(async ({ message, say, next }) => {
 
     // Do nothing if paused
     if (isPaused) return;
-    if (['@pause', '@resume'].includes(message.text)) return next();
+    if (['@pause', '@resume'].includes(message.text)) return next(); // No middleware or listeners for next() to pass control too.
 
     // Pass message to OpenAI as userQuery 
     const userQuery = message.text;
