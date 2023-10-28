@@ -1,5 +1,4 @@
 // Class branch
-
 class UserHistory {
   constructor() {
     this.history = {};
