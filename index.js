@@ -149,8 +149,6 @@ boltApp.message(/@resume/, async ({ say }) => {
   return;
 });
 
-let userHistoryUpdatePromise = Promise.resolve();  // Initialize a Promise that's immediately resolved  PROMISE 
-
 // Main Message Handler for Slack messages
 boltApp.message(async ({ message, say, next }) => {
   try {
@@ -202,15 +200,9 @@ boltApp.message(async ({ message, say, next }) => {
     // Log userHistory BEFORE update 
     console.log('Before Update:', JSON.stringify(userHistory)); 
 
-    // Promise to update userHistory  PROMISE
-    userHistoryUpdatePromise = new Promise((resolve, reject) => {     
-
     //  Add message to userHistory object 
     userHistory[message.user].push({ role: "user", content: message.text });  
-
-      // Resolve the Promise indicating userHistory update is done
-        resolve();
-      });
+    });
 
     // Log userHistory AFTER update 
     console.log('After Update:', JSON.stringify(userHistory));
