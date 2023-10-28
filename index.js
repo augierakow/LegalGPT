@@ -222,7 +222,7 @@ boltApp.message(async ({ message, say, next }) => {
   }
 });
 
-////// ===== APPLICATION STARTUPS ===== 
+////// ===== START APPLICATIONS ===== 
 
 // Start Bolt app  
 (async () => {
