@@ -1,30 +1,3 @@
-// Class branch
-class UserHistory {
-  constructor() {
-    this.history = {};
-  }
-
-  addUserMessage(userId, message) {
-    if (!this.history[userId]) this.history[userId] = [];
-    this.history[userId].push({ role: "user", content: message });
-  }
-
-  getUserHistory(userId) {
-    return this.history[userId];
-  }
-
-  getCompleteHistory() {
-    return this.history;
-  }
-
-  // Add more methods as needed
-}
-
-
-
-
-
-
 ////// ===== CONFIGS & INITS =====
 
 //  Import dependencies
