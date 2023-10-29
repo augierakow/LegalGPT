@@ -1,3 +1,39 @@
+// Singleton class for userHistory
+class userHistory {
+  constructor() {
+    // Initialize userHistory if it's not already initialized
+    if (!userHistory.onlyInstance) {
+      this.userHistory = {};   // This is just a template
+      userHistory.onlyInstance = this;
+    }
+    // Return the single instance of UserHistory
+    return userHistory.onlyInstance;
+  }
+
+  // Method to update a user's history
+  updateUserHistory(userId, message) {
+    if (!this.userHistory[userId]) this.userHistory[userId] = [];
+    this.userHistory[userId].push(message);
+  }
+
+  // Method to get the entire userHistory
+    getUserHistory() {
+    return this.userHistory;
+  }
+
+  // Method to get a specific user's history
+    getUserHistoryById(userId) {
+    return this.userHistory[userId] || [];
+    }
+  }
+
+  // Create an actual single instance of UserHistory. The class
+  // blueprint above says this.userHistory (instance) will be set to {}. 
+  const userHistoryOnlyInstance = new userHistory();
+
+  // Export the instance.  (No exports used in this program yet.)
+  export default userHistoryOnlyInstance;
+
 ////// ===== CONFIGS & INITS =====
 
 //  Import dependencies
