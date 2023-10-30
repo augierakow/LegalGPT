@@ -1,47 +1,12 @@
-// Singleton class for userHistory
-class userHistory {
-  constructor() {
-    // Initialize userHistory if it's not already initialized
-    if (!userHistory.onlyInstance) {
-      this.userHistory = {};   // This is just a template
-      userHistory.onlyInstance = this;
-    }
-    // Return the single instance of UserHistory
-    return userHistory.onlyInstance;
-  }
-
-  // Method to update a user's history
-  updateUserHistory(userId, message) {
-    if (!this.userHistory[userId]) this.userHistory[userId] = [];
-    this.userHistory[userId].push(message);
-  }
-
-  // Method to get the entire userHistory
-    getUserHistory() {
-    return this.userHistory;
-  }
-
-  // Method to get a specific user's history
-    getUserHistoryById(userId) {
-    return this.userHistory[userId] || [];
-    }
-  }
-
-  // Create an actual single instance of UserHistory. The class
-  // blueprint above says this.userHistory (instance) will be set to {}. 
-  const userHistoryOnlyInstance = new userHistory();
-
-  // Export the instance.  (No exports used in this program yet.)
-  export default userHistoryOnlyInstance;
-
 ////// ===== CONFIGS & INITS =====
 
 //  Import dependencies
 import dotenv from 'dotenv';
 import pkg from '@slack/bolt';
-import { WebClient } from '@slack/web-api';
+import { WebClient } from '@slack/web-api';  // NOT USING?  REMOVE?
 import { Configuration, OpenAIApi } from "openai";
 import express from "express";
+import userHistoryOnlyInstance from "./userHistory.js";
 
 // Load environment variables from .env file, and verify status
 dotenv.config();
@@ -51,6 +16,7 @@ console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set")
 console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "Set" : "Not Set");
 console.log("PORT1:", process.env.PORT1 ? "Set" : "Not Set");
 console.log("PORT2:", process.env.PORT2 ? "Set" : "Not Set");
+// add console logs for MY_MEMBER_ID, BOT_MEMBER_ID and TEST_CHANNEL_ID ??
 
 // Initialize OpenAI API connection 
 const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
@@ -64,10 +30,6 @@ const boltApp = new App({
   token: botToken
 });
 const web = new WebClient(process.env.SLACK_BOT_TOKEN);
-
-// The `userHistory` object is empty until the `userHistory.push()` function pushes Slack messages into the `userHistory` object.
-const userHistory = {}
-
 
 // Initialize in-memory store as JavaScript object
 let isPaused = false; 
@@ -100,7 +62,7 @@ expressApp.use((req, res, next) => {
 
 // Test OpenAI API query via GET route. 
 // First Express endpoint. Executes only on GET request, not at launch. 
-// ttps://slack2gpt-main2.augierakow.repl.co/
+// https://slack2gpt-main2.augierakow.repl.co/
 expressApp.get("/", async (req, res) => {
   try {
     const response = await fetchOpenAIResponse("Test Query");
@@ -117,22 +79,21 @@ expressApp.get("/", async (req, res) => {
 expressApp.get("/userHistory", (req, res) => {  
   try {
     console.log("GET /userHistory route called"); 
-    res.json({userHistory: userHistory }); 
-    console.log('userHistory:', userHistory ); 
+    res.json({userHistory: userHistoryOnlyInstance.getUserHistory() }); 
+    console.log('userHistory:', userHistoryOnlyInstance.getUserHistory() ); 
   } catch (error) {
-    console.log("Error in GET /userHistory;", error); 
+    console.log("Error in GET /userHistory", error)
   }
 });
 
 // Third Express endpoint.  Executes only on GET request, not at launch.
 // Load this Express endpoint to update userHistory from within Express app, then reload /userHistory endpoint to see if object is updated with rest info
 expressApp.get("/testUserHistory", (req, res) => {
-  userHistory["testUser"] = [
-    { role: "user", content: "Test Message" },
-    { role: "bot", content: "Test Reply xo" }
-  ];
+  userHistoryOnlyInstance.updateUserHistory("testUser", { role: "user", content: "Test Message" });
+  userHistoryOnlyInstance.updateUserHistory("testUser", { role: "bot", content: "Test Reply xo" });
+
   res.send("Updated userHistory for testUser.");
-});
+}); 
 
 ////// ===== APPLICATION LOGIC =====
 
@@ -237,23 +198,20 @@ boltApp.message(async ({ message, say, next }) => {
 
     //// --- userHistory ---
 
-    // Check User ID for userHistory object, initialize if none 
-    if (!userHistory[message.user]) userHistory[message.user] = [];
-
     // Log userHistory BEFORE update 
-    console.log('Before Update:', JSON.stringify(userHistory)); 
+    console.log('Before Update:', JSON.stringify(userHistoryOnlyInstance)); 
 
-    //  Add message to userHistory object 
-    userHistory[message.user].push({ role: "user", content: message.text });  
+    // Check User ID for userHistory object, initialize if none
+    userHistoryOnlyInstance.updateUserHistory(message.user, { role: "user", content: message.text });
 
     // Log userHistory AFTER update 
-    console.log('After Update:', JSON.stringify(userHistory));
+    console.log('After Update:', JSON.stringify(userHistoryOnlyInstance));
 
     //// --- Message processing (unskipped messages only) ---
 
     // Do nothing if paused
     if (isPaused) return;
-    if (['@pause', '@resume'].includes(message.text)) return next(); // No middleware or listeners for next() to pass control too.
+    if (/(@pause|@resume)/.test(message.text)) return next(); // No middleware or listeners for next() to pass control too.  // UPDATE THIS LINE IN MAIN BRANCH TOO!!
 
     // Pass message to OpenAI as userQuery 
     const userQuery = message.text;
@@ -277,7 +235,7 @@ boltApp.message(async ({ message, say, next }) => {
 })();
 
 // Send test message to #legalgpt-test channel
-sendTestMessage(process.env.TEST_CHANNEL_ID);
+sendTestMessage(process.env.TEST_CHANNEL_ID);  // ADD ERROR HANDLING?
 
 // Start Express app
 expressApp.listen(port, () => {
