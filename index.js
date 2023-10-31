@@ -3,12 +3,12 @@
 //  Import dependencies
 import dotenv from 'dotenv';
 import pkg from '@slack/bolt';
-import { WebClient } from '@slack/web-api';
+import { WebClient } from '@slack/web-api';  // NOT USING? REMOVE? 
 import { Configuration, OpenAIApi } from "openai";
 import express from "express";
 
 // Load environment variables from .env file, and verify status
-dotenv.config();
+// Add console logs for MY_MEMBER_ID, BOT_MEMBER_ID and TEST-CHANNEL_ID?dotenv.config();
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
@@ -31,7 +31,6 @@ const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 
 // The `userHistory` object is empty until the `userHistory.push()` function pushes Slack messages into the `userHistory` object.
 const userHistory = {}
-
 
 // Initialize in-memory store as JavaScript object
 let isPaused = false; 
@@ -64,7 +63,7 @@ expressApp.use((req, res, next) => {
 
 // Test OpenAI API query via GET route. 
 // First Express endpoint. Executes only on GET request, not at launch. 
-// ttps://slack2gpt-main2.augierakow.repl.co/
+// https://slack2gpt-main2.augierakow.repl.co/
 expressApp.get("/", async (req, res) => {
   try {
     const response = await fetchOpenAIResponse("Test Query");
@@ -84,7 +83,7 @@ expressApp.get("/userHistory", (req, res) => {
     res.json({userHistory: userHistory }); 
     console.log('userHistory:', userHistory ); 
   } catch (error) {
-    console.log("Error in GET /userHistory;", error); 
+    console.log("Error in GET /userHistory", error); 
   }
 });
 
@@ -217,7 +216,7 @@ boltApp.message(async ({ message, say, next }) => {
 
     // Do nothing if paused
     if (isPaused) return;
-    if (['@pause', '@resume'].includes(message.text)) return next(); // No middleware or listeners for next() to pass control too.
+    if (/(@pause|@resume)/.test(message.text)) return next(); // No middleware or listeners for next() to pass control too.
 
     // Pass message to OpenAI as userQuery 
     const userQuery = message.text;
@@ -241,7 +240,7 @@ boltApp.message(async ({ message, say, next }) => {
 })();
 
 // Send test message to #legalgpt-test channel
-sendTestMessage(process.env.TEST_CHANNEL_ID);
+sendTestMessage(process.env.TEST_CHANNEL_ID);  // ADD ERROR HANDLING?
 
 // Start Express app
 expressApp.listen(port, () => {
