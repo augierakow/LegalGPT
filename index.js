@@ -8,7 +8,8 @@ import { Configuration, OpenAIApi } from "openai";
 import express from "express";
 
 // Load environment variables from .env file, and verify status
-// Add console logs for MY_MEMBER_ID, BOT_MEMBER_ID and TEST-CHANNEL_ID?dotenv.config();
+// Add console logs for MY_MEMBER_ID, BOT_MEMBER_ID and TEST-CHANNEL_ID?
+dotenv.config();
 console.log("Printing Environment Variables:");
 console.log("SLACK_SIGNING_SECRET:", process.env.SLACK_SIGNING_SECRET ? "Set" : "Not Set");
 console.log("SLACK_BOT_TOKEN:", process.env.SLACK_BOT_TOKEN ? "Set" : "Not Set");
