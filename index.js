@@ -1,4 +1,4 @@
-////// ===== CONFIGS & INITS =====  TEST 
+////// ===== CONFIGS & INITS =====  TEST MAIN BRANCH
 
 //  Import dependencies
 import dotenv from 'dotenv';
